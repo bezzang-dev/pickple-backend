@@ -14,6 +14,7 @@ import com.pickple.delivery.application.events.DeliveryCreateResponseEvent;
 import com.pickple.delivery.application.dto.request.DeliveryStartRequestDto;
 import com.pickple.delivery.application.dto.response.DeliveryStartResponseDto;
 import com.pickple.delivery.application.events.DeliveryEndEvent;
+import com.pickple.delivery.application.events.KafkaOutboxEvent;
 import com.pickple.delivery.application.events.NotificationSendEvent;
 import com.pickple.delivery.application.mapper.DeliveryMapper;
 import com.pickple.delivery.application.port.OrderClient;
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -59,6 +61,8 @@ public class DeliveryApplicationService {
 
     private final OrderClient orderClient;
 
+    private final ApplicationEventPublisher applicationEventPublisher;
+
     @Value("${kafka.topic.delivery-create-response}")
     private String deliveryCreateResponseTopic;
 
@@ -77,16 +81,17 @@ public class DeliveryApplicationService {
                     Delivery.createFrom(dto));
         } catch (Exception e) {
             log.error("배송 생성에 실패하였습니다.: {}", dto, e);
-            throw new CustomException(CommonErrorCode.DATABASE_ERROR);
+            throw new CustomException(DeliveryErrorCode.DELIVERY_CREATE_FAILURE);
         }
 
         DeliveryCreateResponseEvent deliveryCreateResponseEvent = new DeliveryCreateResponseEvent(
                 delivery.getOrderId(),
                 delivery.getDeliveryId());
-        log.info("Kafka 메시지를 발행합니다. Topic: {}, 배송 ID: {}", deliveryCreateResponseTopic,
+        log.info("Kafka 메시지를 발행합니다 (AFTER_COMMIT). Topic: {}, 배송 ID: {}", deliveryCreateResponseTopic,
                 delivery.getDeliveryId());
-        deliveryMessageProducerService.sendMessage(deliveryCreateResponseTopic,
-                EventSerializer.serialize(deliveryCreateResponseEvent));
+        applicationEventPublisher.publishEvent(
+                new KafkaOutboxEvent(deliveryCreateResponseTopic,
+                        EventSerializer.serialize(deliveryCreateResponseEvent)));
     }
 
     @Transactional
@@ -103,7 +108,7 @@ public class DeliveryApplicationService {
         return DeliveryMapper.convertEntityToInfoResponseDto(delivery);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public DeliveryStartResponseDto startDelivery(DeliveryStartRequestDto dto) {
         log.info("배송 시작 요청을 처리합니다. 배송 ID: {}, 택배 회사: {}, 배송 유형: {}", dto.getDeliveryId(),
                 dto.getDeliveryCarrier(), dto.getDeliveryType());
@@ -142,10 +147,11 @@ public class DeliveryApplicationService {
         delivery.endDelivery();
         Delivery savedDelivery = deliveryRepository.save(delivery);
 
-        deliveryMessageProducerService.sendMessage(deliveryEndResponseTopic,
-                EventSerializer.serialize(
-                        new DeliveryEndEvent(delivery.getOrderId(), deliveryId, "DELIVERED")
-                ));
+        applicationEventPublisher.publishEvent(
+                new KafkaOutboxEvent(deliveryEndResponseTopic,
+                        EventSerializer.serialize(
+                                new DeliveryEndEvent(delivery.getOrderId(), deliveryId, "DELIVERED")
+                        )));
 
         sendNotification(delivery, "배송 완료 알림", "배송이 완료되었습니다.");
         log.info("배송 완료 처리가 성공적으로 완료되었습니다. 배송 ID: {}", delivery.getDeliveryId());
@@ -227,7 +233,7 @@ public class DeliveryApplicationService {
 
     @Transactional
     public DeliveryDeleteResponseDto deleteDelivery(UUID deliveryId, String deleter) {
-        log.error("배송을 삭제합니다. 배송 ID: {}, 배송 삭제 요청자: {}", deliveryId, deleter);
+        log.info("배송을 삭제합니다. 배송 ID: {}, 배송 삭제 요청자: {}", deliveryId, deleter);
         Delivery delivery = deliveryRepository.findById(deliveryId).orElseThrow(
                 () -> new CustomException(DeliveryErrorCode.DELIVERY_NOT_FOUND)
         );
@@ -244,10 +250,11 @@ public class DeliveryApplicationService {
             log.error("배송 삭제에 실패하였습니다.: {}", e.getMessage());
             throw new CustomException(DeliveryErrorCode.DELIVERY_SAVE_FAILURE);
         }
-        deliveryMessageProducerService.sendMessage(deliveryEndResponseTopic,
-                EventSerializer.serialize(
-                        new DeliveryEndEvent(delivery.getOrderId(), deliveryId, "DELETED")
-                ));
+        applicationEventPublisher.publishEvent(
+                new KafkaOutboxEvent(deliveryEndResponseTopic,
+                        EventSerializer.serialize(
+                                new DeliveryEndEvent(delivery.getOrderId(), deliveryId, "DELETED")
+                        )));
         return new DeliveryDeleteResponseDto(delivery.getDeliveryId(), delivery.getOrderId(),
                 deleter);
     }
@@ -256,7 +263,10 @@ public class DeliveryApplicationService {
     private void sendNotification(Delivery delivery, String subject, String content) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String sender = (String) authentication.getPrincipal();
-        String role =  authentication.getAuthorities().stream().findFirst().get().getAuthority();
+        String role = authentication.getAuthorities().stream()
+                .findFirst()
+                .orElseThrow(() -> new CustomException(CommonErrorCode.AUTHENTICATION_ERROR))
+                .getAuthority();
         String username = orderClient.getUsernameByDeliveryId(
                 delivery.getDeliveryId(), role, sender);
 
