@@ -6,9 +6,7 @@ import com.pickple.common_module.exception.CustomException;
 import com.pickple.payment_service.application.dto.PaymentRespDto;
 import com.pickple.payment_service.domain.model.Payment;
 import com.pickple.payment_service.domain.repository.PaymentRepository;
-import com.pickple.payment_service.infrastructure.messaging.events.PaymentCancelFailureEvent;
 import com.pickple.payment_service.infrastructure.messaging.events.PaymentCancelResponseEvent;
-import com.pickple.payment_service.infrastructure.messaging.events.PaymentCreateFailureEvent;
 import com.pickple.payment_service.infrastructure.messaging.events.PaymentCreateResponseEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,23 +42,15 @@ public class PaymentService {
         }
 
         Payment payment = new Payment(orderId, userName, amount);
-
-        try {
-            // 결제 생성 후 대기 처리
-            paymentRepository.save(payment);
-        } catch(Exception e){
-            PaymentCreateFailureEvent event = new PaymentCreateFailureEvent(orderId);
-            paymentEventService.sendCreateFailureEvent(event);
-            throw new CustomException(PaymentErrorCode.PAYMENT_CREATE_FAILED);
-        }
+        paymentRepository.save(payment);
 
         // 결제 완료 처리
         payment.success();
         paymentRepository.save(payment);
 
+        // 트랜잭션 커밋 후 Kafka 이벤트 발행 (KafkaOutboxEventListener가 AFTER_COMMIT 시점에 처리)
         PaymentCreateResponseEvent event = new PaymentCreateResponseEvent(payment.getOrderId(), payment.getPaymentId());
         paymentEventService.sendCreateSuccessEvent(event);
-
     }
 
     // 결제 취소 처리
@@ -75,16 +65,11 @@ public class PaymentService {
                 () -> new CustomException(PaymentErrorCode.PAYMENT_NOT_FOUND)
         );
 
-        try {
-            // 결제 취소
-            payment.cancel();
-            paymentRepository.save(payment);
-        } catch(Exception e){
-            PaymentCancelFailureEvent event = new PaymentCancelFailureEvent(orderId);
-            paymentEventService.sendCancelFailureEvent(event);
-            throw new CustomException(PaymentErrorCode.PAYMENT_CANCEL_FAILED);
-        }
+        // 결제 취소
+        payment.cancel();
+        paymentRepository.save(payment);
 
+        // 트랜잭션 커밋 후 Kafka 이벤트 발행
         PaymentCancelResponseEvent event = new PaymentCancelResponseEvent(payment.getOrderId(), payment.getPaymentId());
         paymentEventService.sendCancelSuccessEvent(event);
     }

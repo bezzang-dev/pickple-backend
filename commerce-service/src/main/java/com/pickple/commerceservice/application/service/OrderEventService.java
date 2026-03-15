@@ -5,12 +5,12 @@ import com.pickple.commerceservice.domain.model.OrderDetail;
 import com.pickple.commerceservice.domain.model.OrderStatus;
 import com.pickple.commerceservice.domain.repository.OrderRepository;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
-import com.pickple.commerceservice.infrastructure.messaging.events.PaymentCancelRequestEvent;
 import com.pickple.common_module.exception.CustomException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +22,6 @@ public class OrderEventService {
     private final OrderRepository orderRepository;
     private final OrderMessagingProducerService messagingProducerService;
     private final StockService stockService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
      * payment-create-response
@@ -41,8 +40,14 @@ public class OrderEventService {
         // 주문 상태 저장
         orderRepository.save(order);
 
-        // 배송 생성 요청
-        messagingProducerService.sendDeliveryCreateRequest(orderId, order.getUsername());
+        // 트랜잭션 커밋 후 배송 생성 요청
+        String username = order.getUsername();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingProducerService.sendDeliveryCreateRequest(orderId, username);
+            }
+        });
     }
 
     /**
@@ -92,9 +97,16 @@ public class OrderEventService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        sendPaymentCancelRequest(orderId);
         order.assignDeliveryId(null); // 배송 ID 연관성 제거
         orderRepository.save(order);  // 변경된 주문 저장
+
+        // 트랜잭션 커밋 후 결제 취소 요청 전송
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingProducerService.sendPaymentCancelRequest(orderId);
+            }
+        });
     }
 
     // 재고 차감
@@ -111,11 +123,5 @@ public class OrderEventService {
         for (OrderDetail detail : orderDetails) {
             stockService.increaseStockQuantityForOrder(detail);
         }
-    }
-
-    // 배송 취소로 인한 결제 취소 요청
-    private void sendPaymentCancelRequest(UUID orderId) {
-        PaymentCancelRequestEvent cancelEvent = new PaymentCancelRequestEvent(orderId, "배송 취소로 인한 결제 취소 요청");
-        kafkaTemplate.send("payment-cancel-request", cancelEvent);
     }
 }

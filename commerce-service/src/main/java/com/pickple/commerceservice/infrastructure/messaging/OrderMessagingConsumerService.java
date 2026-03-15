@@ -1,6 +1,7 @@
 package com.pickple.commerceservice.infrastructure.messaging;
 
 import com.pickple.commerceservice.application.service.OrderEventService;
+import com.pickple.commerceservice.application.service.OrderMessagingProducerService;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.configuration.EventSerializer;
 import com.pickple.commerceservice.infrastructure.messaging.events.DeliveryCreateResponseEvent;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class OrderMessagingConsumerService {
 
     private final OrderEventService orderEventService;
+    private final OrderMessagingProducerService messagingProducerService;
 
     @KafkaListener(topics = "payment-create-response", groupId = "commerce-service")
     public void listenPaymentCreateResponse(String message) {
@@ -34,7 +36,14 @@ public class OrderMessagingConsumerService {
         UUID orderId = event.getOrderId();
         UUID paymentId = event.getPaymentId();
 
-        orderEventService.handlePaymentComplete(orderId, paymentId);
+        try {
+            orderEventService.handlePaymentComplete(orderId, paymentId);
+        } catch (Exception e) {
+            // 보상 트랜잭션: 재고 차감 등 실패 시 결제 취소 요청
+            log.error("결제 완료 처리 실패, 보상 트랜잭션으로 결제 취소 요청. orderId: {}, error: {}",
+                    orderId, e.getMessage());
+            messagingProducerService.sendPaymentCancelRequest(orderId);
+        }
     }
 
     @KafkaListener(topics = "delivery-create-response", groupId = "commerce-service")

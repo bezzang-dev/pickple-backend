@@ -188,19 +188,31 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
+        // 배송 정보 조회 (Feign) — Kafka 발행 전에 먼저 수행하여, 실패 시 트랜잭션 롤백만 발생
+        DeliveryClientDto deliveryInfo = null;
+        try {
+            deliveryInfo = deliveryClient.getDeliveryInfo(role, username, orderId).getData();
+        } catch (FeignException e) {
+            log.warn("배송 정보 조회 실패 (배송이 아직 생성되지 않았을 수 있음). orderId: {}", orderId);
+        }
+
         order.changeStatus(OrderStatus.CANCELED);
         order.markAsDeleted();
         orderRepository.save(order);
 
-        // 결제 취소 요청 전송 (Kafka)
-        messagingProducerService.sendPaymentCancelRequest(orderId);
+        // 트랜잭션 커밋 후 Kafka 이벤트 발행 — 롤백 시 메시지가 발행되지 않음
+        final DeliveryClientDto finalDeliveryInfo = deliveryInfo;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                messagingProducerService.sendPaymentCancelRequest(orderId);
 
-        // 배송 정보 삭제 요청 처리
-        DeliveryClientDto deliveryInfo = deliveryClient.getDeliveryInfo(role, username, orderId).getData();
-
-        if (deliveryInfo != null && deliveryInfo.getDeliveryId() != null) {
-            messagingProducerService.sendDeliveryDeleteRequest(deliveryInfo.getDeliveryId(), orderId, username);
-        }
+                if (finalDeliveryInfo != null && finalDeliveryInfo.getDeliveryId() != null) {
+                    messagingProducerService.sendDeliveryDeleteRequest(
+                            finalDeliveryInfo.getDeliveryId(), orderId, username);
+                }
+            }
+        });
 
         // OrderResponseDto 반환 (fromEntity 메서드 활용)
         return OrderResponseDto.fromEntity(order, null, null);
@@ -264,13 +276,18 @@ public class OrderService {
         if (order.getPaymentId() == null) {
             log.info("주문이 결제되지 않았으므로 취소 처리됩니다. orderId: {}", orderId);
 
-            // 결제 취소 요청 전송 (Kafka)
-            messagingProducerService.sendPaymentCancelRequest(orderId);
-
             // 주문 상태를 CANCELED로 변경
             order.changeStatus(OrderStatus.CANCELED);
             order.markAsDeleted();
             orderRepository.save(order);
+
+            // 트랜잭션 커밋 후 결제 취소 요청 전송
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    messagingProducerService.sendPaymentCancelRequest(orderId);
+                }
+            });
         }
     }
 }
