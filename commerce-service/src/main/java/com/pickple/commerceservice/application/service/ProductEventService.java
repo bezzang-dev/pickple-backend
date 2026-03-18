@@ -8,6 +8,7 @@ import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.messaging.events.ProductCreatedEvent;
 import com.pickple.commerceservice.infrastructure.messaging.events.ProductDeletedEvent;
 import com.pickple.commerceservice.infrastructure.messaging.events.ProductUpdatedEvent;
+import com.pickple.commerceservice.infrastructure.messaging.events.StockUpdatedEvent;
 import com.pickple.common_module.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,14 @@ public class ProductEventService {
         ProductDocument productDocument = productSearchRepository.findById(event.getProductId())
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.PRODUCT_DOCUMENT_NOT_FOUND));
         productDocument.markAsDeleted();
+        productSearchRepository.save(productDocument);
+    }
+
+    @Transactional
+    public void handleStockUpdated(StockUpdatedEvent event) {
+        ProductDocument productDocument = productSearchRepository.findById(event.getProductId())
+                .orElseThrow(() -> new CustomException(CommerceErrorCode.PRODUCT_DOCUMENT_NOT_FOUND));
+        productDocument.updateStock(event.getStockId(), event.getStockQuantity());
         productSearchRepository.save(productDocument);
     }
 }

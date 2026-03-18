@@ -78,6 +78,7 @@ kafka:
     product-created: product-created
     product-updated: product-updated
     product-deleted: product-deleted
+    stock-updated: stock-updated
 
 resilience4j:
   circuitbreaker:

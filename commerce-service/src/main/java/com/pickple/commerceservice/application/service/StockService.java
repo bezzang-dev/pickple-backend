@@ -2,16 +2,18 @@ package com.pickple.commerceservice.application.service;
 
 import com.pickple.commerceservice.application.dto.StockByProductDto;
 import com.pickple.commerceservice.application.dto.StockResponseDto;
+import com.pickple.commerceservice.application.events.KafkaOutboxEvent;
 import com.pickple.commerceservice.domain.model.OrderDetail;
 import com.pickple.commerceservice.domain.model.Product;
 import com.pickple.commerceservice.domain.model.Stock;
-import com.pickple.commerceservice.domain.repository.ProductRepository;
 import com.pickple.commerceservice.domain.repository.StockRepository;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
-import com.pickple.commerceservice.presentation.dto.request.StockCreateRequestDto;
+import com.pickple.commerceservice.infrastructure.messaging.events.StockUpdatedEvent;
 import com.pickple.commerceservice.presentation.dto.request.StockUpdateRequestDto;
 import com.pickple.common_module.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,10 @@ import java.util.UUID;
 public class StockService {
 
     private final StockRepository stockRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+
+    @Value("${kafka.topic.stock-updated}")
+    private String stockUpdatedTopic;
 
     // 재고 생성
     @Transactional
@@ -45,6 +51,7 @@ public class StockService {
     public StockByProductDto updateStockQuantity(UUID productId, StockUpdateRequestDto updateDto) {
         Stock stock = findStockByProductId(productId);
         stock.updateStockQuantity(updateDto.getStockQuantity());
+        publishStockUpdatedEvent(stock);
         return StockByProductDto.fromEntity(stock);
     }
 
@@ -53,6 +60,7 @@ public class StockService {
     public void increaseStockQuantity(UUID productId) {
         Stock stock = findStockByProductId(productId);
         stock.increaseStock();  // 수량 1 증가
+        publishStockUpdatedEvent(stock);
     }
 
     // 재고 1 감소 메서드
@@ -61,6 +69,7 @@ public class StockService {
         Stock stock = findStockByProductId(productId);
         stock.decreaseStock();  // 수량 1 감소
         stockRepository.save(stock);
+        publishStockUpdatedEvent(stock);
     }
 
     // 주문한 수량만큼 재고 감소 메서드
@@ -78,6 +87,7 @@ public class StockService {
             throw new CustomException(CommerceErrorCode.INSUFFICIENT_STOCK);
         }
         stock.decreaseStockQuantity(currentQuantity - quantityToReduce);
+        publishStockUpdatedEvent(stock);
     }
 
     // 상품 ID로 재고 조회 메서드
@@ -100,6 +110,22 @@ public class StockService {
         stock.updateStockQuantity(currentQuantity + quantityToIncrease);
 
         stockRepository.save(stock);
+        publishStockUpdatedEvent(stock);
+    }
+
+    /**
+     * 재고 변경 시 ES 동기화를 위한 이벤트 발행 (Outbox 패턴)
+     */
+    private void publishStockUpdatedEvent(Stock stock) {
+        StockUpdatedEvent event = StockUpdatedEvent.builder()
+                .productId(stock.getProduct().getProductId())
+                .stockId(stock.getStockId())
+                .stockQuantity(stock.getStockQuantity())
+                .build();
+
+        applicationEventPublisher.publishEvent(
+                new KafkaOutboxEvent(stockUpdatedTopic,
+                        stock.getProduct().getProductId().toString(), event));
     }
 
 }

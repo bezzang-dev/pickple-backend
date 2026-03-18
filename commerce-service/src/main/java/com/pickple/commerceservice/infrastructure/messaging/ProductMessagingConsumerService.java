@@ -19,31 +19,30 @@ public class ProductMessagingConsumerService {
 
     @KafkaListener(topics = "${kafka.topic.product-created}", groupId = "commerce-service")
     public void listenProductCreated(String message) {
-        try {
-            ProductCreatedEvent event = EventSerializer.deserialize(message, ProductCreatedEvent.class);
-            productEventService.handleProductCreated(event);
-        } catch (RuntimeException e) {
-            log.error("Failed to deserialize ProductCreatedEvent: {}", e.getMessage());
-        }
+        log.info("ProductCreatedEvent 수신: {}", message);
+        ProductCreatedEvent event = EventSerializer.deserialize(message, ProductCreatedEvent.class);
+        productEventService.handleProductCreated(event);
     }
 
     @KafkaListener(topics = "${kafka.topic.product-updated}", groupId = "commerce-service")
     public void listenProductUpdated(String message) {
-        try {
-            ProductUpdatedEvent event = EventSerializer.deserialize(message, ProductUpdatedEvent.class);
-            productEventService.handleProductUpdated(event);
-        } catch (RuntimeException e) {
-            log.error("Failed to deserialize ProductUpdatedEvent: {}", e.getMessage());
-        }
+        log.info("ProductUpdatedEvent 수신: {}", message);
+        ProductUpdatedEvent event = EventSerializer.deserialize(message, ProductUpdatedEvent.class);
+        productEventService.handleProductUpdated(event);
     }
 
     @KafkaListener(topics = "${kafka.topic.product-deleted}", groupId = "commerce-service")
     public void listenProductDeleted(String message) {
-        try {
-            ProductDeletedEvent event = EventSerializer.deserialize(message, ProductDeletedEvent.class);
-            productEventService.handleProductDeleted(event);
-        } catch (RuntimeException e) {
-            log.error("Failed to deserialize ProductDeletedEvent: {}", e.getMessage());
-        }
+        log.info("ProductDeletedEvent 수신: {}", message);
+        ProductDeletedEvent event = EventSerializer.deserialize(message, ProductDeletedEvent.class);
+        productEventService.handleProductDeleted(event);
+    }
+
+    @KafkaListener(topics = "${kafka.topic.stock-updated}", groupId = "commerce-service")
+    public void listenStockUpdated(String message) {
+        log.info("StockUpdatedEvent 수신: {}", message);
+        com.pickple.commerceservice.infrastructure.messaging.events.StockUpdatedEvent event =
+                EventSerializer.deserialize(message, com.pickple.commerceservice.infrastructure.messaging.events.StockUpdatedEvent.class);
+        productEventService.handleStockUpdated(event);
     }
 }

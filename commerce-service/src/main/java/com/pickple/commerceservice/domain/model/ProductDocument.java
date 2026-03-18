@@ -59,6 +59,10 @@ public class ProductDocument {
         this.isPublic = false;
     }
 
+    public void updateStock(UUID stockId, Long stockQuantity) {
+        this.stock = new StockInfo(stockId, stockQuantity);
+    }
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
