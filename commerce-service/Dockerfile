@@ -1,13 +1,14 @@
-FROM eclipse-temurin:17-jdk-alpine
+FROM eclipse-temurin:17-jdk-alpine AS builder
 
-ARG JAR_FILE=build/libs/*.jar
+WORKDIR /build
+COPY . .
+RUN chmod +x ./gradlew && ./gradlew :commerce-service:bootJar -x test
+
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
-
-COPY ${JAR_FILE} app.jar
+COPY --from=builder /build/commerce-service/build/libs/*.jar app.jar
 
 EXPOSE ${COMMERCE_SERVICE_PORT}
-
-ENV SPRING_PROFILES_ACTIVE=prod
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

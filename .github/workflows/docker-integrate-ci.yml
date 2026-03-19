@@ -25,7 +25,7 @@ jobs:
 
       - name: ELK Repository에서 ELK 환경 setup
         uses: actions/checkout@v4
-        with:
+        with: 
           repository: pickple-ecommerce/docker-elk
           path: temp-config-secrets
 
@@ -39,19 +39,41 @@ jobs:
         run: |
           docker compose -f docker/docker-compose.dev.yml up -d
 
-      - name: Sleep for 10 seconds
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '10s'
-      
+      - name: Wait for Kafka to be ready
+        run: |
+          echo "Waiting for Kafka..."
+          until docker exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1; do
+            echo "  Kafka not ready yet, retrying in 3s..."
+            sleep 3
+          done
+          echo "Kafka is ready."
+
+      - name: Wait for PostgreSQL (user_db) to be ready
+        run: |
+          echo "Waiting for user_db PostgreSQL..."
+          until docker exec user_db pg_isready -U user_db > /dev/null 2>&1; do
+            echo "  user_db not ready yet, retrying in 3s..."
+            sleep 3
+          done
+          echo "user_db is ready."
+
+      - name: Wait for Redis to be ready
+        run: |
+          echo "Waiting for Redis master..."
+          until docker exec redis-master redis-cli ping 2>/dev/null | grep -q PONG; do
+            echo "  Redis not ready yet, retrying in 3s..."
+            sleep 3
+          done
+          echo "Redis is ready."
+
       # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
       # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      
+
       - name: Grant execute permission for Gradle Wrapper in root directory
         run: chmod +x ./gradlew
-      
+
       - name: Build and Start Eureka Server
         run: |
           cd eureka-server
@@ -61,6 +83,15 @@ jobs:
           cd ..
         env:
           SPRING_PROFILES_ACTIVE: dev
-      
+
+      - name: Wait for Eureka Server to be ready
+        run: |
+          echo "Waiting for Eureka Server..."
+          until curl -s http://localhost:${EUREKA_SERVER_PORT:-8761}/actuator/health 2>/dev/null | grep -q '"status":"UP"'; do
+            echo "  Eureka not ready yet, retrying in 3s..."
+            sleep 3
+          done
+          echo "Eureka Server is ready."
+
       - name: Build Gradle Project
         run: ./gradlew build -Dspring.profiles.active=dev
