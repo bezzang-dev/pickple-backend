@@ -3,7 +3,7 @@ package com.pickple.commerceservice.infrastructure.redis;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
-import com.pickple.commerceservice.infrastructure.configuration.EventSerializer;
+import com.pickple.common_module.infrastructure.messaging.EventSerializer;
 import com.pickple.commerceservice.presentation.dto.request.OrderCreateRequestDto;
 import com.pickple.common_module.exception.CustomException;
 import lombok.extern.slf4j.Slf4j;

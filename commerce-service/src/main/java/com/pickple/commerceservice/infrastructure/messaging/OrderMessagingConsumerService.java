@@ -3,7 +3,7 @@ package com.pickple.commerceservice.infrastructure.messaging;
 import com.pickple.commerceservice.application.service.OrderEventService;
 import com.pickple.commerceservice.application.service.OrderMessagingProducerService;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
-import com.pickple.commerceservice.infrastructure.configuration.EventSerializer;
+import com.pickple.common_module.infrastructure.messaging.EventSerializer;
 import com.pickple.commerceservice.infrastructure.messaging.events.DeliveryCreateResponseEvent;
 import com.pickple.commerceservice.infrastructure.messaging.events.DeliveryEndResponseEvent;
 import com.pickple.commerceservice.infrastructure.messaging.events.PaymentCancelResponseEvent;
