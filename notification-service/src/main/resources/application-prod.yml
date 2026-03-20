@@ -22,8 +22,8 @@ spring:
       properties:
         spring.json.trusted.packages: '*'
     producer:
-      key-serializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-serializer: org.apache.kafka.common.serialization.StringDeserializer
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
   mail:
     host: smtp.gmail.com

@@ -23,7 +23,19 @@ spring:
 
 service:
   jwt:
-    secret-key: paieRY4DK8B5jo8NRHQRVo8Ljs2zJgWbEDjbJ3cTVKVac7oftXqVaFmoaC9ouoAp
+    secret-key: ${JWT_SECRET_KEY:paieRY4DK8B5jo8NRHQRVo8Ljs2zJgWbEDjbJ3cTVKVac7oftXqVaFmoaC9ouoAp}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 20s
 
 management:
   endpoints:

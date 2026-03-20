@@ -3,7 +3,7 @@ package com.pickple.auth.application.service;
 import com.pickple.auth.application.domain.model.User;
 import com.pickple.auth.application.security.JwtUtil;
 import com.pickple.auth.application.security.UserDetailsImpl;
-import com.pickple.auth.exception.CustomAuthException;
+import com.pickple.auth.exception.AuthErrorCode;
 import com.pickple.auth.infrastructure.feign.UserServiceClient;
 import com.pickple.auth.presentation.request.LoginRequestDto;
 import com.pickple.auth.presentation.request.SignUpRequestDto;
@@ -66,7 +66,7 @@ public class AuthService {
         } catch (FeignException ex) {
             String errorMessage = extractMessageFromFeignException(ex);
             log.error("회원가입 실패, username: {}, error: {}", signUpDto.getUsername(), errorMessage);
-            throw new CustomAuthException(errorMessage);
+            throw new CustomException(AuthErrorCode.SIGNUP_FAILED);
         }
         return user;
 

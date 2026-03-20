@@ -3,11 +3,11 @@ spring:
     name: delivery-service
   data:
     mongodb:
-      host: localhost
-      port: 5435
-      database: delivery_db
-      username: delivery_db
-      password: delivery
+      host: ${DELIVERY_MONGODB_HOST:localhost}
+      port: ${DELIVERY_MONGODB_PORT:5435}
+      database: ${DELIVERY_MONGODB_DATABASE:delivery_db}
+      username: ${DELIVERY_MONGODB_USERNAME:delivery_db}
+      password: ${DELIVERY_MONGODB_PASSWORD:delivery}
       authentication-database: admin
     redis:
       sentinel:
@@ -25,11 +25,18 @@ spring:
     consumer:
       group-id: delivery-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
+      acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    listener:
+      ack-mode: manual
 eureka:
   client:
     service-url:
@@ -44,6 +51,18 @@ kafka:
     delivery-delete-failure: delivery-delete-failure
     delivery-end-response: delivery-end-response
     email-create-request: email-create-request
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 20s
 
 server:
   port: 19096

@@ -26,7 +26,6 @@ public class DeliveryMessageConsumerService {
 
     private final DeliveryMessageFailureHandler deliveryMessageFailureHandler;
 
-    // TODO: Kafka errorHandler 구현
     @KafkaListener(topics = "delivery-create-request", groupId = "delivery-group")
     public void consumeDeliveryCreation(String message) {
         DeliveryCreateRequestEvent event;

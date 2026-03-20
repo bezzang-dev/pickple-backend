@@ -1,6 +1,6 @@
 package com.pickple.delivery.infrastructure.config;
 
-import com.pickple.delivery.infrastructure.security.CustomAuthenticationFilter;
+import com.pickple.common_module.infrastructure.security.CommonPreAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final CustomAuthenticationFilter customAuthenticationFilter;
+    @Bean
+    public CommonPreAuthFilter commonPreAuthFilter() {
+        return new CommonPreAuthFilter();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,7 +34,7 @@ public class SecurityConfig {
                 sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         );
 
-        http.addFilterBefore(customAuthenticationFilter,
+        http.addFilterBefore(commonPreAuthFilter(),
                         UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeHttpRequests(authorize ->

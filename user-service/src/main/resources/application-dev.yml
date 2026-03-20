@@ -7,9 +7,9 @@ eureka:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_db
-    username: user_db
-    password: user_db
+    url: ${USER_DB_URL:jdbc:postgresql://localhost:5432/user_db}
+    username: ${USER_DB_USERNAME:user_db}
+    password: ${USER_DB_PASSWORD:user_db}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

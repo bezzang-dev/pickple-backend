@@ -1,6 +1,6 @@
 package com.pickple.user.infrastructure.config;
 
-import com.pickple.user.application.security.CustomPreAuthFilter;
+import com.pickple.common_module.infrastructure.security.CommonPreAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +18,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomPreAuthFilter customPreAuthFilter;
+    @Bean
+    public CommonPreAuthFilter commonPreAuthFilter() {
+        return new CommonPreAuthFilter();
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
@@ -45,7 +48,7 @@ public class SecurityConfig {
         );
 
         // 필터 관리
-        http.addFilterBefore(customPreAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(commonPreAuthFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

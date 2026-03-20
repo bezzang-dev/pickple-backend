@@ -7,21 +7,28 @@ spring:
       ddl-auto: update
     show-sql: true
   datasource:
-    url: jdbc:postgresql://localhost:5434/payment_db
-    username: pickple
-    password: 1234
+    url: ${PAYMENT_DB_URL:jdbc:postgresql://localhost:5434/payment_db}
+    username: ${PAYMENT_DB_USERNAME:pickple}
+    password: ${PAYMENT_DB_PASSWORD:1234}
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: payment-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         spring.json.trusted.packages: '*'
     producer:
+      acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    listener:
+      ack-mode: manual
 
 eureka:
   client:

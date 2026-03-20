@@ -19,7 +19,8 @@ public enum DeliveryErrorCode implements ErrorCode {
     DELIVERY_ALREADY_START(HttpStatus.BAD_REQUEST, "이미 시작된 배송입니다."),
     DELIVERY_ALREADY_END(HttpStatus.BAD_REQUEST, "이미 완료된 배송입니다."),
     DELIVERY_NOT_STARTED(HttpStatus.BAD_REQUEST, "배송이 아직 시작되지 않았습니다."),
-    DELIVERY_ALREADY_DELIVERED(HttpStatus.BAD_REQUEST, "이미 완료된 배송입니다.");
+    DELIVERY_ALREADY_DELIVERED(HttpStatus.BAD_REQUEST, "이미 완료된 배송입니다."),
+    ORDER_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "주문 서비스와의 통신 중 오류가 발생했습니다.");
 
 
     private final HttpStatus status;

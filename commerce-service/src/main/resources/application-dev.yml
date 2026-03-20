@@ -10,19 +10,26 @@ spring:
       ddl-auto: update
     show-sql: true
   datasource:
-    url: jdbc:postgresql://localhost:5433/commerce_db
-    username: commerce_db
-    password: commerce
+    url: ${COMMERCE_DB_URL:jdbc:postgresql://localhost:5433/commerce_db}
+    username: ${COMMERCE_DB_USERNAME:commerce_db}
+    password: ${COMMERCE_DB_PASSWORD:commerce}
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: commerce-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
+      acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    listener:
+      ack-mode: manual
   data:
     redis:
       sentinel:
@@ -37,8 +44,8 @@ spring:
 
     elasticsearch:
       host: localhost:9200
-      username: elastic
-      password: changeme
+      username: ${ELASTIC_SEARCH_USERNAME:elastic}
+      password: ${ELASTIC_SEARCH_PASSWORD:changeme}
 
 eureka:
   client:

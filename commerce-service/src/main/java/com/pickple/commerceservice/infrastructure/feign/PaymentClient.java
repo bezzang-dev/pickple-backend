@@ -25,7 +25,6 @@ public interface PaymentClient {
 
     // 서킷 브레이커가 열렸을 때 호출되는 fallback 메서드
     default PaymentClientDto fallbackGetPaymentInfo(String authority, String username, UUID orderId, Throwable throwable) {
-        // CustomException으로 변경하여 예외 처리 일관성 유지
-        throw new RuntimeException("결제 서비스와의 통신이 원활하지 않습니다.", throwable);
+        throw new CustomException(CommerceErrorCode.PAYMENT_SERVICE_ERROR);
     }
 }

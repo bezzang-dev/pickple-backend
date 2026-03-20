@@ -9,7 +9,8 @@ public enum NotificationErrorCode implements ErrorCode {
 
     EMAIL_CREATE_ERROR(HttpStatus.BAD_REQUEST, "email 형식에 맞지 않아 생성에 실패했습니다."),
     EMAIL_SENDING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "email 발신에 실패했습니다."),
-    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다.");
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
+    USER_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "유저 서비스와의 통신 중 오류가 발생했습니다.");
 
 
     private final HttpStatus status;
