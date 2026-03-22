@@ -3,10 +3,8 @@ package com.pickple.gateway.infrastructure.config;
 import com.pickple.gateway.infrastructure.security.JwtUtil;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -27,11 +25,6 @@ public class SecurityConfig {
 
     public SecurityConfig(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-    }
-
-    @Bean
-    public HttpMessageConverters messageConverters() {
-        return new HttpMessageConverters(new MappingJackson2HttpMessageConverter());
     }
 
     @Bean
