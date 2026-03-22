@@ -1,19 +1,27 @@
 services:
   eureka-server:
     build:
-      context: ../eureka-server
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: eureka-server/Dockerfile
     container_name: eureka
     ports:
       - "${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}"
     environment:
       - EUREKA_SERVER_PORT=${EUREKA_SERVER_PORT}
       - EUREKA_HOSTNAME=${EUREKA_HOSTNAME}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:${EUREKA_SERVER_PORT}/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - t4y
 
   gateway:
     build:
-      context: ../gateway
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: gateway/Dockerfile
     container_name: gateway
     ports:
       - "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}"
@@ -29,12 +37,15 @@ services:
       - REDIS_SENTINEL_PORT2=${REDIS_SENTINEL_PORT2}
       - REDIS_SENTINEL_PORT3=${REDIS_SENTINEL_PORT3}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   auth-service:
     build:
-      context: ../auth-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: auth-service/Dockerfile
     container_name: auth-service
     ports:
       - "${AUTH_SERVER_PORT}:${AUTH_SERVER_PORT}"
@@ -50,11 +61,16 @@ services:
       - REDIS_SENTINEL_PORT2=${REDIS_SENTINEL_PORT2}
       - REDIS_SENTINEL_PORT3=${REDIS_SENTINEL_PORT3}
       - LOKI_URL=${LOKI_URL}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   user-service:
     build:
-      context: ../user-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: user-service/Dockerfile
     container_name: user-service
     ports:
       - "${USER_SERVER_PORT}:${USER_SERVER_PORT}"
@@ -69,12 +85,15 @@ services:
       - ZIPKIN_ENDPOINT=${ZIPKIN_ENDPOINT}
       - LOKI_URL=${LOKI_URL}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   commerce-service:
     build:
-      context: ../commerce-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: commerce-service/Dockerfile
     container_name: commerce-service
     ports:
       - "${COMMERCE_SERVER_PORT}:${COMMERCE_SERVER_PORT}"
@@ -95,13 +114,20 @@ services:
       - LOKI_URL=${LOKI_URL}
       - PAYMENT_SERVICE_URL=${PAYMENT_SERVICE_URL}
       - DELIVERY_SERVICE_URL=${DELIVERY_SERVICE_URL}
+      - ELASTIC_SEARCH_HOST=${ELASTIC_SEARCH_HOST}
+      - ELASTIC_SEARCH_PORT=${ELASTIC_SEARCH_PORT}
+      - ELASTIC_SEARCH_USERNAME=${ELASTIC_SEARCH_USERNAME}
+      - ELASTIC_SEARCH_PASSWORD=${ELASTIC_SEARCH_PASSWORD}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   payment-service:
     build:
-      context: ../payment-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: payment-service/Dockerfile
     container_name: payment-service
     ports:
       - "${PAYMENT_SERVER_PORT}:${PAYMENT_SERVER_PORT}"
@@ -116,12 +142,15 @@ services:
       - ZIPKIN_ENDPOINT=${ZIPKIN_ENDPOINT}
       - LOKI_URL=${LOKI_URL}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   delivery-service:
     build:
-      context: ../delivery-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: delivery-service/Dockerfile
     container_name: delivery-service
     ports:
       - "${DELIVERY_SERVER_PORT}:${DELIVERY_SERVER_PORT}"
@@ -143,12 +172,15 @@ services:
       - REDIS_SENTINEL_PORT3=${REDIS_SENTINEL_PORT3}
       - LOKI_URL=${LOKI_URL}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
 
   notification-service:
     build:
-      context: ../notification-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: notification-service/Dockerfile
     container_name: notification-service
     ports:
       - "${NOTIFICATION_SERVER_PORT}:${NOTIFICATION_SERVER_PORT}"
@@ -166,4 +198,11 @@ services:
       - ZIPKIN_ENDPOINT=${ZIPKIN_ENDPOINT}
       - LOKI_URL=${LOKI_URL}
     depends_on:
-      - eureka-server
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - t4y
+
+networks:
+  t4y:
+    external: true
