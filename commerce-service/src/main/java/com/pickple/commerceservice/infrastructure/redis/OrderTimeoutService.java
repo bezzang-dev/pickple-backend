@@ -1,43 +1,63 @@
 package com.pickple.commerceservice.infrastructure.redis;
 
 import com.pickple.commerceservice.application.service.OrderService;
+import com.pickple.commerceservice.domain.model.OrderStatus;
+import com.pickple.commerceservice.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Set;
+import java.time.Duration;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderTimeoutService {
 
     private final OrderService orderService;
+    private final OrderRepository orderRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // 5분마다 체크
-    @Scheduled(fixedRate = 30000)
-    public void checkPaymentTimeout() {
-        Set<String> keys = redisTemplate.keys("*");  // 모든 Redis 키 가져오기
-        if (keys != null) {
-            for (String key : keys) {
-                if (key == null) {
-                    continue; // key가 null인 경우 건너뛰기
-                }
+    private static final String ORDER_TIMEOUT_KEY_PREFIX = "order-timeout:";
 
-                try {
-                    UUID orderId = UUID.fromString(key);  // UUID 형식으로 변환
-                    // 키가 존재하는지 확인
+    /**
+     * 주문 생성 시 타임아웃 키를 Redis에 등록 (TTL 10분)
+     */
+    public void registerOrderTimeout(UUID orderId) {
+        String key = ORDER_TIMEOUT_KEY_PREFIX + orderId;
+        redisTemplate.opsForValue().set(key, "PENDING", Duration.ofMinutes(10));
+        log.info("주문 타임아웃 등록. orderId: {}, TTL: 10분", orderId);
+    }
+
+    /**
+     * 결제 완료 시 타임아웃 키 제거
+     */
+    public void cancelOrderTimeout(UUID orderId) {
+        String key = ORDER_TIMEOUT_KEY_PREFIX + orderId;
+        redisTemplate.delete(key);
+    }
+
+    /**
+     * 1분마다 PENDING 상태인 주문 중 타임아웃 키가 만료된 건을 확인하여 취소 처리
+     */
+    @Scheduled(fixedRate = 60000)
+    public void checkPaymentTimeout() {
+        orderRepository.findByOrderStatusAndIsDeleteFalse(OrderStatus.PENDING)
+                .forEach(order -> {
+                    String key = ORDER_TIMEOUT_KEY_PREFIX + order.getOrderId();
+                    // 키가 만료되었으면(존재하지 않으면) 타임아웃 처리
                     if (!Boolean.TRUE.equals(redisTemplate.hasKey(key))) {
-                        // 키가 만료되었다면 결제 취소 및 주문 취소 처리
-                        orderService.handleOrderTimeout(orderId);
+                        log.info("주문 결제 타임아웃 감지. orderId: {}", order.getOrderId());
+                        try {
+                            orderService.handleOrderTimeout(order.getOrderId());
+                        } catch (Exception e) {
+                            log.error("주문 타임아웃 처리 실패. orderId: {}, error: {}",
+                                    order.getOrderId(), e.getMessage(), e);
+                        }
                     }
-                } catch (IllegalArgumentException e) {
-                    // UUID 형식이 아닌 경우 건너뛰기
-                }
-            }
-        }
+                });
     }
 }

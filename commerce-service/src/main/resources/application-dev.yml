@@ -44,8 +44,15 @@ spring:
 
     elasticsearch:
       host: localhost:9200
-      username: ${ELASTIC_SEARCH_USERNAME:elastic}
-      password: ${ELASTIC_SEARCH_PASSWORD:changeme}
+      username: ${ELASTIC_SEARCH_USERNAME}
+      password: ${ELASTIC_SEARCH_PASSWORD}
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 5000
 
 eureka:
   client:

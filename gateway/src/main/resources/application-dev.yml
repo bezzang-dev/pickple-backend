@@ -54,7 +54,7 @@ server:
 
 service:
   jwt:
-    secret-key: ${JWT_SECRET_KEY:paieRY4DK8B5jo8NRHQRVo8Ljs2zJgWbEDjbJ3cTVKVac7oftXqVaFmoaC9ouoAp}
+    secret-key: ${JWT_SECRET_KEY}
 
 management:
   endpoints:

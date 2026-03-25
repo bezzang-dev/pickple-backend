@@ -14,6 +14,7 @@ import com.pickple.commerceservice.infrastructure.feign.DeliveryClient;
 import com.pickple.commerceservice.infrastructure.feign.PaymentClient;
 import com.pickple.commerceservice.infrastructure.feign.dto.DeliveryClientDto;
 import com.pickple.commerceservice.infrastructure.feign.dto.PaymentClientDto;
+import com.pickple.commerceservice.infrastructure.redis.OrderTimeoutService;
 import com.pickple.commerceservice.infrastructure.redis.TemporaryStorageService;
 import com.pickple.commerceservice.presentation.dto.request.OrderCreateRequestDto;
 import com.pickple.commerceservice.presentation.dto.request.PreOrderRequestDto;
@@ -41,6 +42,7 @@ public class OrderService {
     private final StockService stockService;
     private final RedissonLockStockFacade redissonLockStockFacade;
     private final TemporaryStorageService temporaryStorageService;
+    private final OrderTimeoutService orderTimeoutService;
     private final OrderMessagingProducerService messagingProducerService;
     private final ProductRepository productRepository;
     private final PreOrderRepository preOrderRepository;
@@ -90,6 +92,9 @@ public class OrderService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
+                // 주문 타임아웃 등록 (10분 내 결제 미완료 시 자동 취소)
+                orderTimeoutService.registerOrderTimeout(order.getOrderId());
+
                 // 결제 요청 (Kafka)
                 messagingProducerService.sendPaymentRequest(order.getOrderId(), order.getAmount(), username);
 

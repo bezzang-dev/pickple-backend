@@ -37,6 +37,13 @@ spring:
         max.in.flight.requests.per.connection: 5
     listener:
       ack-mode: manual
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 3000
+            readTimeout: 5000
 eureka:
   client:
     service-url:

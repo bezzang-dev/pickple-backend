@@ -32,9 +32,23 @@ public class CommonPreAuthFilter extends OncePerRequestFilter {
         String roles = request.getHeader("X-User-Roles");
 
         if (username != null && roles != null) {
+            // 빈 문자열 또는 공백만 있는 헤더 값 검증
+            if (username.isBlank() || roles.isBlank()) {
+                log.warn("빈 인증 헤더 수신. X-User-Name: '{}', X-User-Roles: '{}'", username, roles);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
             List<SimpleGrantedAuthority> authorities = Arrays.stream(roles.split(","))
                     .map(role -> new SimpleGrantedAuthority(role.trim()))
+                    .filter(auth -> !auth.getAuthority().isEmpty())
                     .toList();
+
+            if (authorities.isEmpty()) {
+                log.warn("유효한 권한이 없는 요청. username: {}", username);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(username, null, authorities);

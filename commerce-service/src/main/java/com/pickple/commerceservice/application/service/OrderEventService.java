@@ -5,8 +5,11 @@ import com.pickple.commerceservice.domain.model.OrderDetail;
 import com.pickple.commerceservice.domain.model.OrderStatus;
 import com.pickple.commerceservice.domain.repository.OrderRepository;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
+import com.pickple.commerceservice.infrastructure.facade.RedissonLockStockFacade;
+import com.pickple.commerceservice.infrastructure.redis.OrderTimeoutService;
 import com.pickple.common_module.exception.CustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -15,13 +18,15 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderEventService {
 
     private final OrderRepository orderRepository;
     private final OrderMessagingProducerService messagingProducerService;
-    private final StockService stockService;
+    private final RedissonLockStockFacade redissonLockStockFacade;
+    private final OrderTimeoutService orderTimeoutService;
 
     /**
      * payment-create-response
@@ -31,7 +36,7 @@ public class OrderEventService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        // 재고 차감
+        // 재고 차감 (분산 락 적용)
         decreaseStockForOrder(order);
 
         // 결제 ID 지정
@@ -39,6 +44,9 @@ public class OrderEventService {
 
         // 주문 상태 저장
         orderRepository.save(order);
+
+        // 결제 완료 → 타임아웃 키 제거
+        orderTimeoutService.cancelOrderTimeout(orderId);
 
         // 트랜잭션 커밋 후 배송 생성 요청
         String username = order.getUsername();
@@ -83,7 +91,7 @@ public class OrderEventService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        increaseStockForOrder(order); // 재고 복구
+        increaseStockForOrder(order); // 재고 복구 (분산 락 적용)
         order.changeStatus(OrderStatus.CANCELED);  // 주문 취소 처리
         order.assignPaymentId(null);  // 결제 ID 연관성 제거
         orderRepository.save(order);  // 변경된 주문 저장
@@ -109,19 +117,21 @@ public class OrderEventService {
         });
     }
 
-    // 재고 차감
+    // 재고 차감 (분산 락 적용)
     private void decreaseStockForOrder(Order order) {
         List<OrderDetail> orderDetails = order.getOrderDetails();
         for (OrderDetail detail : orderDetails) {
-            stockService.decreaseStockQuantityForOrder(detail);
+            redissonLockStockFacade.decreaseStockForOrderWithLock(
+                    detail.getProduct().getProductId(), detail.getOrderQuantity());
         }
     }
 
-    // 재고 복구
+    // 재고 복구 (분산 락 적용)
     private void increaseStockForOrder(Order order) {
         List<OrderDetail> orderDetails = order.getOrderDetails();
         for (OrderDetail detail : orderDetails) {
-            stockService.increaseStockQuantityForOrder(detail);
+            redissonLockStockFacade.increaseStockForOrderWithLock(
+                    detail.getProduct().getProductId(), detail.getOrderQuantity());
         }
     }
 }

@@ -35,4 +35,36 @@ public class StockRetryService {
         stockRepository.save(stock);
     }
 
+    // 일반 주문: 지정 수량만큼 재고 감소
+    @Retryable(
+            retryFor = {StaleObjectStateException.class, OptimisticLockException.class, ObjectOptimisticLockingFailureException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 200, multiplier = 2)
+    )
+    @Transactional
+    public void decreaseStockQuantityForOrderWithRetry(UUID productId, Long quantity) {
+        Stock stock = stockRepository.findByProduct_ProductIdWithLock(productId)
+                .orElseThrow(() -> new CustomException(CommerceErrorCode.STOCK_DATA_NOT_FOUND_FOR_PRODUCT));
+
+        if (stock.getStockQuantity() < quantity) {
+            throw new CustomException(CommerceErrorCode.INSUFFICIENT_STOCK);
+        }
+        stock.updateStockQuantity(stock.getStockQuantity() - quantity);
+        stockRepository.save(stock);
+    }
+
+    // 주문 취소: 지정 수량만큼 재고 복구
+    @Retryable(
+            retryFor = {StaleObjectStateException.class, OptimisticLockException.class, ObjectOptimisticLockingFailureException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 200, multiplier = 2)
+    )
+    @Transactional
+    public void increaseStockQuantityForOrderWithRetry(UUID productId, Long quantity) {
+        Stock stock = stockRepository.findByProduct_ProductIdWithLock(productId)
+                .orElseThrow(() -> new CustomException(CommerceErrorCode.STOCK_DATA_NOT_FOUND_FOR_PRODUCT));
+        stock.updateStockQuantity(stock.getStockQuantity() + quantity);
+        stockRepository.save(stock);
+    }
+
 }

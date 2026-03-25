@@ -4,6 +4,8 @@ import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.feign.dto.PaymentClientDto;
 import com.pickple.common_module.exception.CustomException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,8 @@ import java.util.UUID;
 @FeignClient(name = "payment-service")
 public interface PaymentClient {
 
+    Logger log = LoggerFactory.getLogger(PaymentClient.class);
+
     @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackGetPaymentInfo")
     @GetMapping("/api/v1/payments/getPaymentInfo/{order_id}")
     PaymentClientDto getPaymentInfo(
@@ -23,8 +27,8 @@ public interface PaymentClient {
             @RequestHeader("X-User-Name") String username,
             @PathVariable("order_id") UUID orderId);
 
-    // 서킷 브레이커가 열렸을 때 호출되는 fallback 메서드
     default PaymentClientDto fallbackGetPaymentInfo(String authority, String username, UUID orderId, Throwable throwable) {
+        log.error("payment-service 호출 실패 (getPaymentInfo). orderId: {}, 원인: {}", orderId, throwable.getMessage(), throwable);
         throw new CustomException(CommerceErrorCode.PAYMENT_SERVICE_ERROR);
     }
 }
