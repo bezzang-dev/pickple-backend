@@ -9,10 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 모든 서비스에서 공통으로 사용되는 전역 예외 핸들러입니다.
+ * 모든 서비스에서 공통으로 사용되는 전역 예외 핸들러 기반 클래스입니다.
  *
  * <p>처리하는 예외 목록:</p>
  * <ul>
@@ -21,10 +20,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  *   <li>{@link Throwable} - 처리되지 않은 모든 예외 (fallback)</li>
  * </ul>
  *
- * <p>서비스별 추가 예외 처리가 필요한 경우, 각 서비스에서 별도
- * {@code @RestControllerAdvice} 클래스를 통해 확장할 수 있습니다.</p>
+ * <p>각 서비스는 이 클래스를 상속받아 {@code @RestControllerAdvice}를 선언하면
+ * 공통 예외 처리 로직을 재사용하면서 서비스별 추가 예외를 확장할 수 있습니다.</p>
  */
-@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);

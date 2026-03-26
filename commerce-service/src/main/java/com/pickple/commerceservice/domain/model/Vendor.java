@@ -6,11 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "p_vendors")
+@SQLRestriction("is_delete = false")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

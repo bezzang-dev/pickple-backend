@@ -68,10 +68,10 @@ public class UserController {
      */
     @DeleteMapping("/{username}")
     @PreAuthorize("hasAuthority('MASTER') or #username == #requestUsername")
-    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable("username") String username,
-                                                          @RequestHeader("X-User-Name") String requestUsername) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("username") String username,
+                                           @RequestHeader("X-User-Name") String requestUsername) {
         userService.softDeleteUser(username);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "회원 삭제 성공", null));
+        return ResponseEntity.noContent().build();
     }
 
     /**

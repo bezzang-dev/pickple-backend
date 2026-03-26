@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: auth-service
+
+  # 테스트에서 외부 Redis 연결 비활성화
+  data:
+    redis:
+      host: localhost
+      port: 6370   # 존재하지 않는 포트 — 단위 테스트에서는 Redis Bean을 Mock으로 대체
+
+  # Eureka 비활성화
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 1000
+            readTimeout: 1000
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+service:
+  jwt:
+    secret-key: dGVzdFNlY3JldEtleUZvclVuaXRUZXN0aW5nT25seTEyMzQ1Njc4OTAxMjM0NTY=
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: WARN
+    com.pickple: DEBUG

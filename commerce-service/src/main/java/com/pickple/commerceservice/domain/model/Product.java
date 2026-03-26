@@ -4,6 +4,7 @@ import com.pickple.commerceservice.presentation.dto.request.ProductUpdateRequest
 import com.pickple.common_module.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,6 +12,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "p_products")
+@SQLRestriction("is_delete = false")
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

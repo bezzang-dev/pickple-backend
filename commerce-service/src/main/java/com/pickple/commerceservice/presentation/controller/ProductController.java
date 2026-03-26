@@ -72,9 +72,9 @@ public class ProductController {
      */
     @DeleteMapping("/{productId}")
     @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable UUID productId) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable UUID productId) {
         productService.softDeleteProduct(productId);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "상품 삭제 성공", null));
+        return ResponseEntity.noContent().build();
     }
 
     /**

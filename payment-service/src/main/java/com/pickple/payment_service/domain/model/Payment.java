@@ -3,6 +3,7 @@ package com.pickple.payment_service.domain.model;
 import com.pickple.common_module.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLRestriction("is_delete = false")
 @Table(name="p_payments")
 public class Payment extends BaseEntity {
 

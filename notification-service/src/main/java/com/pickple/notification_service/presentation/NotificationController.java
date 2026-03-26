@@ -82,7 +82,7 @@ public class NotificationController {
 
     @PreAuthorize("hasAuthority('MASTER')")
     @DeleteMapping("/channel/{channel_id}")
-    public ResponseEntity<ApiResponse<ChannelCreateRespDto>> deleteChannel(@PathVariable("channel_id") UUID channelId) {
+    public ResponseEntity<Void> deleteChannel(@PathVariable("channel_id") UUID channelId) {
         notificationService.deleteChannel(channelId);
 
         return ResponseEntity.noContent().build();

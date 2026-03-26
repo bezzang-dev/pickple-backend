@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: commerce-service
+
+  # H2 인메모리 DB — 외부 PostgreSQL 불필요
+  datasource:
+    url: jdbc:h2:mem:commerce_test_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Redis (Sentinel 대신 단일 호스트 — 테스트에서 Mock)
+  data:
+    redis:
+      host: localhost
+      port: 6370
+
+  # Kafka 자동 구성 비활성화
+  kafka:
+    bootstrap-servers: localhost:9999
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+kafka:
+  topic:
+    payment-create-request: payment-create-request-test
+    delivery-create-request: delivery-create-request-test
+    payment-cancel-request: payment-cancel-request-test
+    delivery-delete-request: delivery-delete-request-test
+    notification-create-request: notification-create-request-test
+    product-created: product-created-test
+    product-updated: product-updated-test
+    product-deleted: product-deleted-test
+    stock-updated: stock-updated-test
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: WARN
+    com.pickple: DEBUG

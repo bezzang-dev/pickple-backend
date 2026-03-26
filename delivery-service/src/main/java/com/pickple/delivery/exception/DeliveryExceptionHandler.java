@@ -2,6 +2,7 @@ package com.pickple.delivery.exception;
 
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.pickple.common_module.exception.ErrorResponse;
+import com.pickple.common_module.presentation.advice.GlobalExceptionHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -10,11 +11,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * delivery-service 전용 예외 핸들러입니다.
- * CustomException, MethodArgumentNotValidException 등 공통 예외는
- * common-module의 GlobalExceptionHandler가 처리합니다.
+ * CustomException, MethodArgumentNotValidException, Throwable 등 공통 예외는
+ * 부모 클래스인 GlobalExceptionHandler가 처리합니다.
  */
 @RestControllerAdvice
-public class DeliveryExceptionHandler {
+public class DeliveryExceptionHandler extends GlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {

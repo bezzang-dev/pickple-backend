@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "p_orders")
+@SQLRestriction("is_delete = false")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

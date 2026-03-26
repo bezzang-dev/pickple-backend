@@ -1,32 +1,14 @@
 package com.pickple.notification_service.exception;
 
-import com.pickple.common_module.exception.CustomException;
-import com.pickple.common_module.exception.ErrorResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import com.pickple.common_module.presentation.advice.GlobalExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * notification-service 전용 예외 핸들러입니다.
+ * CustomException, MethodArgumentNotValidException, Throwable 등 공통 예외는
+ * 부모 클래스인 GlobalExceptionHandler가 처리합니다.
+ * 이 클래스는 notification-service에서만 발생하는 추가 예외가 생길 경우 확장하여 사용합니다.
+ */
 @RestControllerAdvice
-public class NotificationExceptionHandler {
-    @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ErrorResponse> customExceptionHandler(CustomException e) {
-        return ResponseEntity
-                .status(e.getErrorCode().getStatus())
-                .body(ErrorResponse.error(e.getErrorCode()));
-    }
-
-    // @Valid 검증에 대한 에러 출력
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> methodNotValidExceptionHandler(MethodArgumentNotValidException e) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST)
-                .message(e.getMessage())
-                .build();
-        e.getBindingResult().getFieldErrors().forEach(error -> {
-            errorResponse.addValidation(error.getField(), error.getDefaultMessage());
-        });
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
-    }
+public class NotificationExceptionHandler extends GlobalExceptionHandler {
 }

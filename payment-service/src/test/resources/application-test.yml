@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: payment-service
+
+  # H2 인메모리 DB — 외부 PostgreSQL 불필요
+  datasource:
+    url: jdbc:h2:mem:payment_test_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Kafka 자동 구성 비활성화 (단위 테스트에서 KafkaTemplate Mock 사용)
+  kafka:
+    bootstrap-servers: localhost:9999
+    consumer:
+      group-id: payment-test-group
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: WARN
+    com.pickple: DEBUG

@@ -45,7 +45,9 @@ public class ErrorResponse {
     public static ErrorResponse error(ErrorCode errorCode) {
         return ErrorResponse.builder()
                 .status(errorCode.getStatus())
-                .message(errorCode.getMessage()).build();
+                .message(errorCode.getMessage())
+                .validation(new HashMap<>())
+                .build();
     }
 
     public void addValidation(String field, String errorMessage) {

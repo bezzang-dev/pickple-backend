@@ -3,12 +3,14 @@ package com.pickple.commerceservice.domain.model;
 import com.pickple.common_module.domain.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "p_pre_order_details")
+@SQLRestriction("is_delete = false")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
