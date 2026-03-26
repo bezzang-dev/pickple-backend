@@ -5,24 +5,38 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
   datasource:
     url: ${PAYMENT_DB_URL}
     username: ${PAYMENT_DB_USERNAME}
     password: ${PAYMENT_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      idle-timeout: 600000
+      connection-timeout: 5000
+      max-lifetime: 1800000
+      pool-name: payment-db-pool
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     consumer:
       group-id: payment-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         spring.json.trusted.packages: '*'
     producer:
+      acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+    listener:
+      ack-mode: manual
 
 eureka:
   client:
@@ -40,7 +54,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: prometheus
+        include: health, info, prometheus, metrics
   endpoint:
     health:
       show-details: always
@@ -52,3 +66,9 @@ management:
   tracing:
     sampling:
       probability: 0.2
+
+logging:
+  level:
+    root: WARN
+    com.pickple: INFO
+    org.hibernate.SQL: WARN

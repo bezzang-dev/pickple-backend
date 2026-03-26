@@ -137,6 +137,301 @@ groups:
         isPaused: false
         notification_settings:
           receiver: traffic-channel
+
+      # 각 마이크로서비스 상태 감시
+      - uid: ms01_gateway_down
+        title: gateway-down-alert
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: up{job="gateway"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        labels:
+          alertname: ServiceDown
+          instance: gateway
+          severity: critical
+        annotations:
+          summary: Gateway 서비스 다운
+          description: API Gateway가 응답하지 않습니다.
+        isPaused: false
+        notification_settings:
+          receiver: server-channel
+
+      - uid: ms02_commerce_down
+        title: commerce-service-down-alert
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: up{job="commerce-service"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        labels:
+          alertname: ServiceDown
+          instance: commerce-service
+          severity: critical
+        annotations:
+          summary: Commerce 서비스 다운
+          description: Commerce 서비스가 응답하지 않습니다.
+        isPaused: false
+        notification_settings:
+          receiver: server-channel
+
+      - uid: ms03_payment_down
+        title: payment-service-down-alert
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: up{job="payment-service"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        labels:
+          alertname: ServiceDown
+          instance: payment-service
+          severity: critical
+        annotations:
+          summary: Payment 서비스 다운
+          description: Payment 서비스가 응답하지 않습니다.
+        isPaused: false
+        notification_settings:
+          receiver: server-channel
+
+  - orgId: 1
+    name: kafka-lag
+    folder: pickple
+    interval: 1m
+    rules:
+      - uid: kafka_consumer_lag_alert
+        title: kafka-consumer-lag-alert
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: sum by (job) (kafka_consumer_fetch_manager_records_lag_max)
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        labels:
+          alertname: KafkaConsumerLag
+          severity: warning
+        annotations:
+          summary: Kafka Consumer Lag 경고
+          description: Kafka Consumer lag이 1000을 초과했습니다. 메시지 처리 지연이 발생 중입니다.
+        isPaused: false
+        notification_settings:
+          receiver: server-channel
+
+  - orgId: 1
+    name: circuitbreaker
+    folder: pickple
+    interval: 30s
+    rules:
+      - uid: cb_open_state_alert
+        title: circuitbreaker-open-alert
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              expr: resilience4j_circuitbreaker_state{state="open"}
+              instant: true
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 30s
+        labels:
+          alertname: CircuitBreakerOpen
+          severity: critical
+        annotations:
+          summary: CircuitBreaker Open 상태 감지
+          description: 서킷 브레이커가 Open 상태입니다. 외부 서비스 호출이 차단되고 있습니다.
+        isPaused: false
+        notification_settings:
+          receiver: server-channel
+
       - uid: ae0x4um0gqigwc
         title: traffic-alert
         condition: A

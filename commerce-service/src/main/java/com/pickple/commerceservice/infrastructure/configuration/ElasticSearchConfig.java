@@ -16,28 +16,36 @@ public class ElasticSearchConfig extends ElasticsearchConfiguration {
     private final String hostUrl;
     private final String username;
     private final String password;
+    private final boolean sslEnabled;
 
     public ElasticSearchConfig(@Value("${spring.data.elasticsearch.host}") String hostUrl,
                          @Value("${spring.data.elasticsearch.username}") String username,
-                         @Value("${spring.data.elasticsearch.password}") String password) {
+                         @Value("${spring.data.elasticsearch.password}") String password,
+                         @Value("${spring.data.elasticsearch.ssl-enabled:false}") boolean sslEnabled) {
         this.hostUrl = hostUrl;
         this.username = username;
         this.password = password;
+        this.sslEnabled = sslEnabled;
     }
 
     @Override
     @SneakyThrows
     public ClientConfiguration clientConfiguration() {
-        return ClientConfiguration.builder()
-                .connectedTo(hostUrl)
+        var builder = ClientConfiguration.builder()
+                .connectedTo(hostUrl);
+
+        ClientConfiguration.TerminalClientConfigurationBuilder terminalBuilder = sslEnabled
+                ? builder.usingSsl().withBasicAuth(username, password)
+                : builder.withBasicAuth(username, password);
+
+        return terminalBuilder
                 .withConnectTimeout(Duration.ofSeconds(5))
                 .withSocketTimeout(Duration.ofSeconds(3))
-                .withBasicAuth(username, password)
                 .withHeaders(() -> {
                     HttpHeaders headers = new HttpHeaders();
                     headers.add("currentTime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
                     return headers;
                 })
-            .build();
+                .build();
     }
 }
