@@ -3,7 +3,7 @@ package com.pickple.payment_service.application.service;
 import com.pickple.common_module.exception.CustomException;
 import com.pickple.payment_service.application.dto.PaymentRespDto;
 import com.pickple.payment_service.domain.model.Payment;
-import com.pickple.payment_service.domain.model.PaymentStatusEnum;
+import com.pickple.payment_service.domain.model.PaymentStatus;
 import com.pickple.payment_service.domain.repository.PaymentRepository;
 import com.pickple.payment_service.exception.PaymentErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,7 +85,7 @@ class PaymentServiceTest {
         paymentService.cancelPayment(orderId);
 
         // Then
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatusEnum.CANCELED);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED);
         verify(paymentEventService).sendCancelSuccessEvent(any());
     }
 

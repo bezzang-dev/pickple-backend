@@ -2,8 +2,10 @@ package com.pickple.delivery.exception;
 
 import com.pickple.common_module.exception.ErrorCode;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 @AllArgsConstructor
 public enum DeliveryErrorCode implements ErrorCode {
 
@@ -26,13 +28,4 @@ public enum DeliveryErrorCode implements ErrorCode {
     private final HttpStatus status;
     private final String message;
 
-    @Override
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public HttpStatus getStatus() {
-        return status;
-    }
 }

@@ -2,8 +2,10 @@ package com.pickple.commerceservice.exception;
 
 import com.pickple.common_module.exception.ErrorCode;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 @AllArgsConstructor
 public enum CommerceErrorCode implements ErrorCode {
     VENDOR_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 업체입니다."),
@@ -35,15 +37,5 @@ public enum CommerceErrorCode implements ErrorCode {
 
     private final HttpStatus status;
     private final String message;
-
-    @Override
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public HttpStatus getStatus() {
-        return status;
-    }
 
 }

@@ -37,22 +37,22 @@ public class Payment extends BaseEntity {
 
     @Column(name="status")
     @Enumerated(value=EnumType.STRING)
-    private PaymentStatusEnum status;
+    private PaymentStatus status;
 
     public Payment(UUID orderId, String userName, BigDecimal amount) {
         this.orderId = orderId;
         this.amount = amount;
         this.username = userName;
         this.method = "CREDIT-CARD";
-        this.status = PaymentStatusEnum.PENDING;
+        this.status = PaymentStatus.PENDING;
     }
 
     public void success() {
-        this.status = PaymentStatusEnum.COMPLETED;
+        this.status = PaymentStatus.COMPLETED;
     }
 
     public void cancel() {
-        this.status = PaymentStatusEnum.CANCELED;
+        this.status = PaymentStatus.CANCELED;
     }
 
     public void delete(String deleteBy) {

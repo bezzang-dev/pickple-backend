@@ -21,11 +21,11 @@ public interface PaymentClient {
     Logger log = LoggerFactory.getLogger(PaymentClient.class);
 
     @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackGetPaymentInfo")
-    @GetMapping("/api/v1/payments/getPaymentInfo/{order_id}")
+    @GetMapping("/api/v1/payments/getPaymentInfo/{orderId}")
     PaymentClientDto getPaymentInfo(
             @RequestHeader("X-User-Roles") String authority,
             @RequestHeader("X-User-Name") String username,
-            @PathVariable("order_id") UUID orderId);
+            @PathVariable UUID orderId);
 
     default PaymentClientDto fallbackGetPaymentInfo(String authority, String username, UUID orderId, Throwable throwable) {
         log.error("payment-service 호출 실패 (getPaymentInfo). orderId: {}, 원인: {}", orderId, throwable.getMessage(), throwable);

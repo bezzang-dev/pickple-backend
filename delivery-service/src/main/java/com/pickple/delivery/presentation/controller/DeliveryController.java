@@ -45,9 +45,9 @@ public class DeliveryController {
     private final DeliveryDetailApplicationService deliveryDetailService;
 
     @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    @PostMapping("/{delivery_id}/start")
+    @PostMapping("/{deliveryId}/start")
     public ResponseEntity<ApiResponse<DeliveryStartResponseDto>> startDelivery(
-            @PathVariable("delivery_id") UUID deliveryId,
+            @PathVariable UUID deliveryId,
             @Valid @RequestBody DeliveryStartRequest request) {
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "배송이 등록되었습니다.", deliveryService.startDelivery(
@@ -55,9 +55,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAnyAuthority('USER', 'VENDOR_MANAGER', 'MASTER')")
-    @GetMapping("/{delivery_id}")
+    @GetMapping("/{deliveryId}")
     public ResponseEntity<ApiResponse<DeliveryInfoResponseDto>> getDeliveryInfo(
-            @PathVariable("delivery_id") UUID deliveryId) {
+            @PathVariable UUID deliveryId) {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "배송 조회에 성공하였습니다.",
                 deliveryService.getDeliveryInfo(deliveryId)));
     }
@@ -65,7 +65,7 @@ public class DeliveryController {
     @PreAuthorize("hasAnyAuthority('USER', 'VENDOR_MANAGER', 'MASTER')")
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<ApiResponse<DeliveryStartResponseDto>> getDeliveryInfoByOrderId(
-            @PathVariable("orderId") UUID orderId) {
+            @PathVariable UUID orderId) {
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "배송 조회에 성공하였습니다.",
                         deliveryService.getDeliveryInfoByOrderId(orderId)));
@@ -84,9 +84,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    @PostMapping("/{delivery_id}/details")
+    @PostMapping("/{deliveryId}/details")
     public ResponseEntity<ApiResponse<DeliveryInfoResponseDto>> createDeliveryDetail(
-            @PathVariable("delivery_id") UUID deliveryId,
+            @PathVariable UUID deliveryId,
             @Valid @RequestBody DeliveryDetailCreateRequest request) {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "배송 경로가 등록되었습니다.",
                 deliveryDetailService.createDeliveryDetail(
@@ -94,9 +94,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    @PutMapping("/{delivery_id}")
+    @PutMapping("/{deliveryId}")
     public ResponseEntity<ApiResponse<DeliveryInfoResponseDto>> updateDelivery(
-            @PathVariable("delivery_id") UUID deliveryId,
+            @PathVariable UUID deliveryId,
             @Valid @RequestBody DeliveryUpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "배송이 수정되었습니다.",
                 deliveryService.updateDelivery(deliveryId,
@@ -104,9 +104,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAuthority('MASTER')")
-    @DeleteMapping("/{delivery_id}")
+    @DeleteMapping("/{deliveryId}")
     public ResponseEntity<ApiResponse<DeliveryDeleteResponseDto>> deleteDelivery(
-            @PathVariable("delivery_id") UUID deliveryId) {
+            @PathVariable UUID deliveryId) {
         String deleter = (String) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "성공적으로 삭제되었습니다.",
@@ -114,9 +114,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAuthority('MASTER')")
-    @GetMapping("/{delivery_id}/status")
+    @GetMapping("/{deliveryId}/status")
     public ResponseEntity<ApiResponse<DeliveryStatusResponseDto>> getDeliveryStatus(
-            @PathVariable("delivery_id") UUID deliveryId) {
+            @PathVariable UUID deliveryId) {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, "배송 상태 조회에 성공하였습니다.",
                 deliveryService.getDeliveryStatus(deliveryId)));
     }
@@ -169,9 +169,9 @@ public class DeliveryController {
     }
 
     @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    @PostMapping("/{delivery_id}/end")
+    @PostMapping("/{deliveryId}/end")
     public ResponseEntity<ApiResponse<DeliveryInfoResponseDto>> endDelivery(
-            @PathVariable("delivery_id") UUID deliveryId) {
+            @PathVariable UUID deliveryId) {
         return ResponseEntity.ok(
                 ApiResponse.success(HttpStatus.OK, "배송이 완료되었습니다.", deliveryService.endDelivery(deliveryId)));
     }

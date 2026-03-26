@@ -35,7 +35,7 @@ public class Notification extends BaseEntity {
 
     @Column(name="category")
     @Enumerated(value=EnumType.STRING)
-    private NotificationCategoryEnum category;
+    private NotificationCategory category;
 
     @Column(name="subject")
     private String subject;
@@ -52,7 +52,7 @@ public class Notification extends BaseEntity {
     public Notification(EmailCreateRequestEvent event, Channel channel){
         this.username = event.getUsername();
         this.channel = channel;
-        this.category = NotificationCategoryEnum.valueOf(event.getCategory());
+        this.category = NotificationCategory.valueOf(event.getCategory());
         this.subject = event.getSubject();
         this.content = event.getContent();
         this.sender = event.getSender();

@@ -1,7 +1,7 @@
 package com.pickple.payment_service.application.dto;
 
 import com.pickple.payment_service.domain.model.Payment;
-import com.pickple.payment_service.domain.model.PaymentStatusEnum;
+import com.pickple.payment_service.domain.model.PaymentStatus;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -18,7 +18,7 @@ public class PaymentRespDto {
     private String username;
     private BigDecimal amount;
     private String method;
-    private PaymentStatusEnum status;
+    private PaymentStatus status;
 
     public static PaymentRespDto from(Payment payment) {
         return PaymentRespDto.builder()

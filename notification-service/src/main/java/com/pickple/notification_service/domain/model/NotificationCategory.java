@@ -1,6 +1,11 @@
 package com.pickple.notification_service.domain.model;
 
-public enum NotificationCategoryEnum {
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
+public enum NotificationCategory {
     USER("USER"),
     PRODUCT("PRODUCT"),
     VENDOR("VENDOR"),
@@ -9,8 +14,4 @@ public enum NotificationCategoryEnum {
     DELIVERY("DELIVERY");
 
     private final String category;
-
-    NotificationCategoryEnum(String category) {
-        this.category = category;
-    }
 }

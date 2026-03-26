@@ -26,9 +26,9 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PreAuthorize("hasAuthority('MASTER')")
-    @DeleteMapping("/{payment_id}")
+    @DeleteMapping("/{paymentId}")
     public ResponseEntity<Void> deletePayment(
-            @PathVariable(name="payment_id") UUID paymentId
+            @PathVariable UUID paymentId
     ){
         paymentService.deletePayment(paymentId);
 
@@ -36,9 +36,9 @@ public class PaymentController {
     }
 
     @PreAuthorize("hasAnyAuthority('USER', 'VENDOR_MANAGER', 'MASTER')")
-    @GetMapping("/details/{payment_id}")
+    @GetMapping("/details/{paymentId}")
     public ResponseEntity<ApiResponse<PaymentRespDto>> getPaymentDetailsByUser(
-            @PathVariable(name="payment_id") UUID paymentId,
+            @PathVariable UUID paymentId,
             @RequestHeader(name="X-User-Name") String userName
     ) {
 
@@ -67,8 +67,8 @@ public class PaymentController {
     }
 
     // feign
-    @GetMapping("/getPaymentInfo/{order_id}")
-    public PaymentRespDto getPaymentInfo(@PathVariable(name="order_id") UUID orderId){
+    @GetMapping("/getPaymentInfo/{orderId}")
+    public PaymentRespDto getPaymentInfo(@PathVariable UUID orderId){
         return paymentService.getPaymentInfo(orderId);
     }
 }
