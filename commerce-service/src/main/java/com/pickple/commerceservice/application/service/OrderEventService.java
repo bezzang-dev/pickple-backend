@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +33,7 @@ public class OrderEventService {
      * payment-create-response
      */
     @Transactional
-    public void handlePaymentComplete(UUID orderId, UUID paymentId) {
+    public void handlePaymentComplete(UUID orderId, UUID paymentId, BigDecimal amount, String method, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
@@ -40,7 +41,7 @@ public class OrderEventService {
         decreaseStockForOrder(order);
 
         // 결제 ID 지정
-        order.assignPaymentId(paymentId);
+        order.assignPaymentSnapshot(paymentId, amount, method, status);
 
         // 주문 상태 저장
         orderRepository.save(order);
@@ -63,12 +64,32 @@ public class OrderEventService {
      * delivery-create-response
      */
     @Transactional
-    public void handleDeliveryComplete(UUID orderId, UUID deliveryId) {
+    public void handleDeliveryComplete(
+            UUID orderId,
+            UUID deliveryId,
+            String deliveryStatus,
+            String deliveryType,
+            String carrierName,
+            String trackingNumber,
+            String deliveryRequirement,
+            String recipientName,
+            String recipientAddress,
+            String recipientContact
+    ) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        // 주문 ID 지정
-        order.assignDeliveryId(deliveryId);
+        order.assignDeliverySnapshot(
+                deliveryId,
+                deliveryStatus,
+                deliveryType,
+                carrierName,
+                trackingNumber,
+                deliveryRequirement,
+                recipientName,
+                recipientAddress,
+                recipientContact
+        );
 
         orderRepository.save(order);
     }
@@ -77,11 +98,12 @@ public class OrderEventService {
      * delivery-end-response(complete)
      */
     @Transactional
-    public void handleDeliveryEnd(UUID orderId) {
+    public void handleDeliveryEnd(UUID orderId, String deliveryStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
         order.changeStatus(OrderStatus.COMPLETED);
+        order.updateDeliveryStatus(deliveryStatus);
     }
 
     /**
@@ -94,7 +116,7 @@ public class OrderEventService {
 
         increaseStockForOrder(order); // 재고 복구 (분산 락 적용)
         order.changeStatus(OrderStatus.CANCELED);  // 주문 취소 처리
-        order.assignPaymentId(null);  // 결제 ID 연관성 제거
+        order.clearPaymentSnapshot();
         orderRepository.save(order);  // 변경된 주문 저장
     }
 
@@ -102,11 +124,11 @@ public class OrderEventService {
      * delivery-end-response(cancel)
      */
     @Transactional
-    public void handleDeliveryCancel(UUID orderId) {
+    public void handleDeliveryCancel(UUID orderId, String deliveryStatus) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        order.assignDeliveryId(null); // 배송 ID 연관성 제거
+        order.updateDeliveryStatus(deliveryStatus);
         orderRepository.save(order);  // 변경된 주문 저장
 
         // 트랜잭션 커밋 후 결제 취소 요청 전송

@@ -1,10 +1,7 @@
 package com.pickple.delivery.infrastructure.messaging;
 
-import static com.pickple.common_module.infrastructure.messaging.EventSerializer.objectMapper;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.pickple.common_module.exception.CustomException;
-import com.pickple.common_module.exception.ErrorCode;
+import com.pickple.common_module.infrastructure.messaging.EventSerializer;
 import com.pickple.delivery.application.mapper.DeliveryMapper;
 import com.pickple.delivery.application.service.DeliveryApplicationService;
 import com.pickple.delivery.exception.DeliveryErrorCode;
@@ -30,9 +27,8 @@ public class DeliveryMessageConsumerService {
     public void consumeDeliveryCreation(String message) {
         DeliveryCreateRequestEvent event;
         try {
-            event = objectMapper.readValue(message,
-                    DeliveryCreateRequestEvent.class);
-        } catch (JsonProcessingException e) {
+            event = EventSerializer.deserialize(message, DeliveryCreateRequestEvent.class);
+        } catch (RuntimeException e) {
             log.error("유효하지 않은 메시지 형식입니다.: {}", message, e);
             throw new CustomException(DeliveryErrorCode.INVALID_MESSAGE_FORMAT);
         }
@@ -52,8 +48,8 @@ public class DeliveryMessageConsumerService {
     public void consumeDeliveryDeletion(String message) {
         DeliveryDeleteRequestEvent event;
         try {
-            event = objectMapper.readValue(message, DeliveryDeleteRequestEvent.class);
-        } catch (JsonProcessingException e) {
+            event = EventSerializer.deserialize(message, DeliveryDeleteRequestEvent.class);
+        } catch (RuntimeException e) {
             log.error("유효하지 않은 메시지 형식입니다.: {}", message, e);
             throw new CustomException(DeliveryErrorCode.INVALID_MESSAGE_FORMAT);
         }

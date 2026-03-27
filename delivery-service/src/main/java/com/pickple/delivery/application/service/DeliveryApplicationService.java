@@ -83,7 +83,15 @@ public class DeliveryApplicationService {
 
         DeliveryCreateResponseEvent deliveryCreateResponseEvent = new DeliveryCreateResponseEvent(
                 delivery.getOrderId(),
-                delivery.getDeliveryId());
+                delivery.getDeliveryId(),
+                delivery.getDeliveryStatus().name(),
+                delivery.getDeliveryType() != null ? delivery.getDeliveryType().name() : null,
+                delivery.getCarrierName(),
+                delivery.getTrackingNumber(),
+                delivery.getDeliveryRequirement(),
+                delivery.getRecipientName(),
+                delivery.getRecipientAddress(),
+                delivery.getRecipientContact());
         log.info("Kafka 메시지를 발행합니다 (AFTER_COMMIT). Topic: {}, 배송 ID: {}", deliveryCreateResponseTopic,
                 delivery.getDeliveryId());
         applicationEventPublisher.publishEvent(

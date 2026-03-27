@@ -16,6 +16,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Slf4j
@@ -41,6 +42,9 @@ public class OrderMessagingConsumerService {
 
         UUID orderId = event.getOrderId();
         UUID paymentId = event.getPaymentId();
+        BigDecimal amount = event.getAmount();
+        String method = event.getMethod();
+        String status = event.getStatus();
 
         // 멱등성 체크
         String idempotencyKey = "idempotent:payment-response:" + orderId;
@@ -50,7 +54,7 @@ public class OrderMessagingConsumerService {
         }
 
         try {
-            orderEventService.handlePaymentComplete(orderId, paymentId);
+            orderEventService.handlePaymentComplete(orderId, paymentId, amount, method, status);
             redisTemplate.opsForValue().set(idempotencyKey, "processed", IDEMPOTENCY_TTL);
         } catch (Exception e) {
             log.error("결제 완료 처리 실패, 보상 트랜잭션으로 결제 취소 요청. orderId: {}, error: {}",
@@ -73,7 +77,18 @@ public class OrderMessagingConsumerService {
         UUID deliveryId = event.getDeliveryId();
 
         try {
-            orderEventService.handleDeliveryComplete(orderId, deliveryId);
+            orderEventService.handleDeliveryComplete(
+                    orderId,
+                    deliveryId,
+                    event.getDeliveryStatus(),
+                    event.getDeliveryType(),
+                    event.getCarrierName(),
+                    event.getTrackingNumber(),
+                    event.getDeliveryRequirement(),
+                    event.getRecipientName(),
+                    event.getRecipientAddress(),
+                    event.getRecipientContact()
+            );
         } catch (Exception e) {
             log.error("배송 완료 처리 실패. orderId: {}, error: {}", orderId, e.getMessage(), e);
             throw e;
@@ -115,9 +130,9 @@ public class OrderMessagingConsumerService {
 
         try {
             if ("DELIVERED".equalsIgnoreCase(status)) {
-                orderEventService.handleDeliveryEnd(orderId);
+                orderEventService.handleDeliveryEnd(orderId, status);
             } else {
-                orderEventService.handleDeliveryCancel(orderId);
+                orderEventService.handleDeliveryCancel(orderId, status);
             }
         } catch (Exception e) {
             log.error("배송 종료 처리 실패. orderId: {}, status: {}, error: {}", orderId, status, e.getMessage(), e);

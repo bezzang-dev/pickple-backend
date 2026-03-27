@@ -1,8 +1,6 @@
 package com.pickple.commerceservice.application.dto;
 
 import com.pickple.commerceservice.domain.model.Order;
-import com.pickple.commerceservice.infrastructure.feign.dto.DeliveryClientDto;
-import com.pickple.commerceservice.infrastructure.feign.dto.PaymentClientDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,10 +22,10 @@ public class OrderResponseDto {
     private BigDecimal amount;
     private String orderStatus;
     private List<OrderDetailResponseDto> orderDetails;
-    private PaymentClientDto paymentInfo;
-    private DeliveryClientDto deliveryInfo;
+    private OrderPaymentSnapshotDto paymentInfo;
+    private OrderDeliverySnapshotDto deliveryInfo;
 
-    public static OrderResponseDto fromEntity(Order order, PaymentClientDto paymentInfo, DeliveryClientDto deliveryInfo) {
+    public static OrderResponseDto fromEntity(Order order) {
         return OrderResponseDto.builder()
                 .orderId(order.getOrderId())
                 .username(order.getUsername())
@@ -36,8 +34,8 @@ public class OrderResponseDto {
                 .orderDetails(order.getOrderDetails().stream()
                         .map(OrderDetailResponseDto::fromEntity)
                         .collect(Collectors.toList()))
-                .paymentInfo(paymentInfo)
-                .deliveryInfo(deliveryInfo)
+                .paymentInfo(OrderPaymentSnapshotDto.fromOrder(order))
+                .deliveryInfo(OrderDeliverySnapshotDto.fromOrder(order))
                 .build();
     }
 }

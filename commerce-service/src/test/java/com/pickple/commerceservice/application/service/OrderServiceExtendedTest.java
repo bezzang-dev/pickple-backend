@@ -5,10 +5,9 @@ import com.pickple.commerceservice.domain.model.OrderStatus;
 import com.pickple.commerceservice.domain.repository.OrderRepository;
 import com.pickple.commerceservice.domain.repository.PreOrderRepository;
 import com.pickple.commerceservice.domain.repository.ProductRepository;
+import com.pickple.commerceservice.infrastructure.feign.UserClient;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.facade.RedissonLockStockFacade;
-import com.pickple.commerceservice.infrastructure.feign.DeliveryClient;
-import com.pickple.commerceservice.infrastructure.feign.PaymentClient;
 import com.pickple.commerceservice.infrastructure.redis.OrderTimeoutService;
 import com.pickple.commerceservice.infrastructure.redis.TemporaryStorageService;
 import com.pickple.commerceservice.presentation.dto.request.OrderCreateRequestDto;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -42,8 +42,7 @@ class OrderServiceExtendedTest {
     @Mock private OrderMessagingProducerService messagingProducerService;
     @Mock private ProductRepository productRepository;
     @Mock private PreOrderRepository preOrderRepository;
-    @Mock private PaymentClient paymentClient;
-    @Mock private DeliveryClient deliveryClient;
+    @Mock private UserClient userClient;
 
     @InjectMocks
     private OrderService orderService;
@@ -78,11 +77,14 @@ class OrderServiceExtendedTest {
     @DisplayName("주문 취소 성공 — 상태가 CANCELED로 전이되고 soft delete 처리")
     void cancelOrder_success() {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
-        when(deliveryClient.getDeliveryInfo(any(), any(), any()))
-                .thenThrow(feign.FeignException.class);
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        orderService.cancelOrder(orderId, "testuser", "USER");
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            orderService.cancelOrder(orderId, "testuser", "USER");
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         assertThat(pendingOrder.getOrderStatus()).isEqualTo(OrderStatus.CANCELED);
         assertThat(pendingOrder.getIsDelete()).isTrue();
@@ -94,7 +96,12 @@ class OrderServiceExtendedTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        orderService.handleOrderTimeout(orderId);
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            orderService.handleOrderTimeout(orderId);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         assertThat(pendingOrder.getOrderStatus()).isEqualTo(OrderStatus.CANCELED);
         assertThat(pendingOrder.getIsDelete()).isTrue();
@@ -140,10 +147,41 @@ class OrderServiceExtendedTest {
                 new OrderCreateRequestDto(List.of(detailDto), deliveryInfo);
 
         when(productRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+        when(userClient.getUserEmail(any(), any(), any())).thenReturn("test@example.com");
 
         assertThatThrownBy(() -> orderService.createOrder(requestDto, "testuser", "USER"))
                 .isInstanceOf(CustomException.class)
                 .satisfies(ex -> assertThat(((CustomException) ex).getErrorCode())
                         .isEqualTo(CommerceErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("주문 단건 조회 — Order 스냅샷만으로 응답을 구성한다")
+    void getOrderById_usesSnapshotWithoutFeign() {
+        UUID paymentId = UUID.randomUUID();
+        UUID deliveryId = UUID.randomUUID();
+        pendingOrder.assignPaymentSnapshot(paymentId, BigDecimal.valueOf(10000), "CREDIT-CARD", "COMPLETED");
+        pendingOrder.assignDeliverySnapshot(
+                deliveryId,
+                "IN_TRANSIT",
+                "COURIER",
+                "PICKPLE",
+                "TRK-123",
+                "문 앞에 놓아주세요",
+                "홍길동",
+                "서울시",
+                "010-1234-5678"
+        );
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(pendingOrder));
+
+        var response = orderService.getOrderById(orderId, "USER", "testuser");
+
+        assertThat(response.getPaymentInfo()).isNotNull();
+        assertThat(response.getPaymentInfo().getPaymentId()).isEqualTo(paymentId);
+        assertThat(response.getPaymentInfo().getStatus()).isEqualTo("COMPLETED");
+        assertThat(response.getDeliveryInfo()).isNotNull();
+        assertThat(response.getDeliveryInfo().getDeliveryId()).isEqualTo(deliveryId);
+        assertThat(response.getDeliveryInfo().getTrackingNumber()).isEqualTo("TRK-123");
     }
 }

@@ -10,17 +10,12 @@ import com.pickple.commerceservice.domain.repository.PreOrderRepository;
 import com.pickple.commerceservice.domain.repository.ProductRepository;
 import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.facade.RedissonLockStockFacade;
-import com.pickple.commerceservice.infrastructure.feign.DeliveryClient;
-import com.pickple.commerceservice.infrastructure.feign.PaymentClient;
 import com.pickple.commerceservice.infrastructure.feign.UserClient;
-import com.pickple.commerceservice.infrastructure.feign.dto.DeliveryClientDto;
-import com.pickple.commerceservice.infrastructure.feign.dto.PaymentClientDto;
 import com.pickple.commerceservice.infrastructure.redis.OrderTimeoutService;
 import com.pickple.commerceservice.infrastructure.redis.TemporaryStorageService;
 import com.pickple.commerceservice.presentation.dto.request.OrderCreateRequestDto;
 import com.pickple.commerceservice.presentation.dto.request.PreOrderRequestDto;
 import com.pickple.common_module.exception.CustomException;
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,8 +42,6 @@ public class OrderService {
     private final OrderMessagingProducerService messagingProducerService;
     private final ProductRepository productRepository;
     private final PreOrderRepository preOrderRepository;
-    private final PaymentClient paymentClient;
-    private final DeliveryClient deliveryClient;
     private final UserClient userClient;
 
     /**
@@ -131,30 +124,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        // 결제 정보 가져오기
-        PaymentClientDto paymentInfo = null;
-        if (order.getPaymentId() != null) {
-            try {
-                paymentInfo = paymentClient.getPaymentInfo(role, username, orderId);
-            } catch (FeignException e) {
-                // 결제 정보를 가져오지 못했을 경우 CustomException 발생
-                throw new CustomException(CommerceErrorCode.PAYMENT_SERVICE_ERROR);
-            }
-        }
-
-        // 배송 정보 가져오기
-        DeliveryClientDto deliveryInfo = null;
-        if (order.getDeliveryId() != null) {
-            try {
-                deliveryInfo = deliveryClient.getDeliveryInfo(role, username, orderId).getData();
-            } catch (FeignException e) {
-                // 배송 정보를 가져오지 못했을 경우 CustomException 발생
-                throw new CustomException(CommerceErrorCode.DELIVERY_SERVICE_ERROR);
-            }
-        }
-
-        // OrderResponseDto 반환 (fromEntity 메서드 활용)
-        return OrderResponseDto.fromEntity(order, paymentInfo, deliveryInfo);
+        return OrderResponseDto.fromEntity(order);
     }
 
     /**
@@ -199,34 +169,26 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND));
 
-        // 배송 정보 조회 (Feign) — Kafka 발행 전에 먼저 수행하여, 실패 시 트랜잭션 롤백만 발생
-        DeliveryClientDto deliveryInfo = null;
-        try {
-            deliveryInfo = deliveryClient.getDeliveryInfo(role, username, orderId).getData();
-        } catch (FeignException e) {
-            log.warn("배송 정보 조회 실패 (배송이 아직 생성되지 않았을 수 있음). orderId: {}", orderId);
-        }
-
         order.changeStatus(OrderStatus.CANCELED);
         order.markAsDeleted();
         orderRepository.save(order);
 
         // 트랜잭션 커밋 후 Kafka 이벤트 발행 — 롤백 시 메시지가 발행되지 않음
-        final DeliveryClientDto finalDeliveryInfo = deliveryInfo;
+        final UUID deliveryId = order.getDeliveryId();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
                 messagingProducerService.sendPaymentCancelRequest(orderId);
 
-                if (finalDeliveryInfo != null && finalDeliveryInfo.getDeliveryId() != null) {
+                if (deliveryId != null) {
                     messagingProducerService.sendDeliveryDeleteRequest(
-                            finalDeliveryInfo.getDeliveryId(), orderId, username);
+                            deliveryId, orderId, username);
                 }
             }
         });
 
         // OrderResponseDto 반환 (fromEntity 메서드 활용)
-        return OrderResponseDto.fromEntity(order, null, null);
+        return OrderResponseDto.fromEntity(order);
     }
 
     /**

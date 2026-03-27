@@ -49,7 +49,13 @@ public class PaymentService {
         paymentRepository.save(payment);
 
         // 트랜잭션 커밋 후 Kafka 이벤트 발행 (KafkaOutboxEventListener가 AFTER_COMMIT 시점에 처리)
-        PaymentCreateResponseEvent event = new PaymentCreateResponseEvent(payment.getOrderId(), payment.getPaymentId());
+        PaymentCreateResponseEvent event = new PaymentCreateResponseEvent(
+                payment.getOrderId(),
+                payment.getPaymentId(),
+                payment.getAmount(),
+                payment.getMethod(),
+                payment.getStatus().name()
+        );
         paymentEventService.sendCreateSuccessEvent(event);
     }
 

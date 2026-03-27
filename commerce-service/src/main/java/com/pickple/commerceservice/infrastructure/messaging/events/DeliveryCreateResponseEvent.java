@@ -12,4 +12,12 @@ import java.util.UUID;
 public class DeliveryCreateResponseEvent {
     private UUID orderId;
     private UUID deliveryId;
+    private String deliveryStatus;
+    private String deliveryType;
+    private String carrierName;
+    private String trackingNumber;
+    private String deliveryRequirement;
+    private String recipientName;
+    private String recipientAddress;
+    private String recipientContact;
 }
