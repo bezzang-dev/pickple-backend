@@ -38,6 +38,9 @@ public class Order extends BaseEntity {
     @Column(name = "username", nullable = false)
     private String username;
 
+    @Column(name = "email")
+    private String email;
+
     @Column(name = "payment_id")
     private UUID paymentId;
 

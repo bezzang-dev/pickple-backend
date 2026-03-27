@@ -17,7 +17,6 @@ import com.pickple.delivery.application.events.DeliveryEndEvent;
 import com.pickple.delivery.application.events.KafkaOutboxEvent;
 import com.pickple.delivery.application.events.NotificationSendEvent;
 import com.pickple.delivery.application.mapper.DeliveryMapper;
-import com.pickple.delivery.application.port.OrderClient;
 import com.pickple.delivery.domain.model.deleted.DeliveryDeleted;
 import com.pickple.delivery.domain.model.deleted.DeliveryDetailDeleted;
 import com.pickple.delivery.domain.model.enums.DeliveryCarrier;
@@ -58,8 +57,6 @@ public class DeliveryApplicationService {
     private final DeliveryDeletedRepository deliveryDeletedRepository;
 
     private final RedisTemplate<String, Object> redisTemplate;
-
-    private final OrderClient orderClient;
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -123,10 +120,16 @@ public class DeliveryApplicationService {
         String carrierId = dto.getDeliveryCarrier().getCompanyId();
         delivery.startDelivery(carrierId, dto.getDeliveryType(), dto);
 
-        sendNotification(delivery, "배송 시작 알림", "배송이 시작되었습니다.");
+        DeliveryStartResponseDto response = DeliveryMapper.convertEntityToStartResponseDto(deliveryRepository.save(delivery));
+
+        try {
+            sendNotification(delivery, "배송 시작 알림", "배송이 시작되었습니다.");
+        } catch (Exception e) {
+            log.warn("알림 발송 실패, 배송 시작은 정상 처리됨. deliveryId={}", delivery.getDeliveryId(), e);
+        }
 
         log.info("배송 시작 처리가 성공적으로 완료되었습니다. 배송 ID: {}", delivery.getDeliveryId());
-        return DeliveryMapper.convertEntityToStartResponseDto(deliveryRepository.save(delivery));
+        return response;
     }
 
     @Transactional
@@ -153,7 +156,12 @@ public class DeliveryApplicationService {
                                 new DeliveryEndEvent(delivery.getOrderId(), deliveryId, "DELIVERED")
                         )));
 
-        sendNotification(delivery, "배송 완료 알림", "배송이 완료되었습니다.");
+        try {
+            sendNotification(delivery, "배송 완료 알림", "배송이 완료되었습니다.");
+        } catch (Exception e) {
+            log.warn("알림 발송 실패, 배송 완료는 정상 처리됨. deliveryId={}", delivery.getDeliveryId(), e);
+        }
+
         log.info("배송 완료 처리가 성공적으로 완료되었습니다. 배송 ID: {}", delivery.getDeliveryId());
         return DeliveryMapper.convertEntityToInfoResponseDto(savedDelivery);
     }
@@ -267,11 +275,11 @@ public class DeliveryApplicationService {
                 .findFirst()
                 .orElseThrow(() -> new CustomException(CommonErrorCode.AUTHENTICATION_ERROR))
                 .getAuthority();
-        String username = orderClient.getUsernameByDeliveryId(
-                delivery.getDeliveryId(), role, sender);
+        String username = delivery.getUsername();
 
         NotificationSendEvent notificationSendEvent = NotificationSendEvent.builder()
                 .username(username)
+                .email(delivery.getEmail())
                 .subject(subject)
                 .content(content)
                 .sender(sender)

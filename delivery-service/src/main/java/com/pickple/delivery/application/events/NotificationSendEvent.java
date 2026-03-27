@@ -8,6 +8,8 @@ import lombok.Getter;
 public class NotificationSendEvent {
     private String username;
 
+    private String email;
+
     @Builder.Default
     private String category = "DELIVERY";
 

@@ -27,6 +27,8 @@ public class DeliveryMapper {
                 .recipientName(event.getRecipientName())
                 .recipientAddress(event.getRecipientAddress())
                 .recipientContact(event.getRecipientContact())
+                .username(event.getUsername())
+                .email(event.getEmail())
                 .build();
     }
 

@@ -12,6 +12,7 @@ import com.pickple.commerceservice.exception.CommerceErrorCode;
 import com.pickple.commerceservice.infrastructure.facade.RedissonLockStockFacade;
 import com.pickple.commerceservice.infrastructure.feign.DeliveryClient;
 import com.pickple.commerceservice.infrastructure.feign.PaymentClient;
+import com.pickple.commerceservice.infrastructure.feign.UserClient;
 import com.pickple.commerceservice.infrastructure.feign.dto.DeliveryClientDto;
 import com.pickple.commerceservice.infrastructure.feign.dto.PaymentClientDto;
 import com.pickple.commerceservice.infrastructure.redis.OrderTimeoutService;
@@ -48,16 +49,21 @@ public class OrderService {
     private final PreOrderRepository preOrderRepository;
     private final PaymentClient paymentClient;
     private final DeliveryClient deliveryClient;
+    private final UserClient userClient;
 
     /**
      * 주문 생성
      */
     @Transactional
     public OrderCreateResponseDto createOrder(OrderCreateRequestDto requestDto, String username, String role) {
+        // 주문 생성 시점에 이메일 조회 (이후 비동기 이벤트 체인에서 Feign 호출 없이 사용)
+        String email = userClient.getUserEmail(username, username, role);
+
         // 주문 정보 생성
         Order order = Order.builder()
                 .orderStatus(OrderStatus.PENDING)
                 .username(username)
+                .email(email)
                 .build();
 
         // OrderDetail 정보 생성
@@ -257,16 +263,6 @@ public class OrderService {
     public Page<OrderSummaryResponseDto> findOrdersByOrderStatus(OrderStatus orderStatus, Pageable pageable) {
         return orderRepository.findOrdersByOrderStatus(orderStatus, pageable)
                 .map(OrderSummaryResponseDto::fromEntity);
-    }
-
-    /**
-     * 배송아이디로 username 검색
-     */
-    @Transactional(readOnly = true)
-    public String findUsernameByDeliveryId(UUID deliveryId) {
-        return orderRepository.findByDeliveryId(deliveryId).orElseThrow(
-                () -> new CustomException(CommerceErrorCode.ORDER_NOT_FOUND)
-        ).getUsername();
     }
 
     /**

@@ -150,15 +150,4 @@ public class OrderController {
         );
     }
 
-    /**
-     * 배송 아이디로 username 검색
-     */
-    @GetMapping("/deliveries/{deliveryId}/username")
-    @PreAuthorize("hasAnyAuthority('VENDOR_MANAGER', 'MASTER')")
-    public String getUsernameByDeliveryId(
-            @PathVariable("deliveryId") UUID deliveryId,
-            @RequestHeader("X-User-Roles") String role,
-            @RequestHeader("X-User-Name") String username) {
-        return orderService.findUsernameByDeliveryId(deliveryId);
-    }
 }

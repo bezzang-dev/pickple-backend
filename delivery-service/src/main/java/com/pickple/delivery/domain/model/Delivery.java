@@ -62,6 +62,12 @@ public class Delivery extends BaseEntity implements Persistable<UUID> {
     @Field("recipient_contact")
     private String recipientContact;
 
+    @Field("username")
+    private String username;
+
+    @Field("email")
+    private String email;
+
     @Field("delivery_details")
     @Builder.Default
     private List<DeliveryDetail> deliveryDetails = new ArrayList<>();
@@ -73,6 +79,8 @@ public class Delivery extends BaseEntity implements Persistable<UUID> {
                 .recipientName(dto.getRecipientName())
                 .recipientAddress(dto.getRecipientAddress())
                 .recipientContact(dto.getRecipientContact())
+                .username(dto.getUsername())
+                .email(dto.getEmail())
                 .build();
     }
 

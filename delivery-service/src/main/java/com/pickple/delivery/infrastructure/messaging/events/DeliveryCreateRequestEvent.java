@@ -10,6 +10,8 @@ public class DeliveryCreateRequestEvent {
 
     private String username;
 
+    private String email;
+
     private String deliveryRequirement;
 
     private String recipientName;

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EmailCreateRequestEvent {
     private String username;
+    private String email;
     private String role;
     private String category;
 

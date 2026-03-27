@@ -50,10 +50,11 @@ public class OrderEventService {
 
         // 트랜잭션 커밋 후 배송 생성 요청
         String username = order.getUsername();
+        String email = order.getEmail();
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                messagingProducerService.sendDeliveryCreateRequest(orderId, username);
+                messagingProducerService.sendDeliveryCreateRequest(orderId, username, email);
             }
         });
     }

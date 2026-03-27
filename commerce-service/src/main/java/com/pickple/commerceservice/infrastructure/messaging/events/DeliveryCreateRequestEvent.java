@@ -16,4 +16,5 @@ public class DeliveryCreateRequestEvent {
     private String recipientAddress;
     private String recipientContact;
     private String username;
+    private String email;
 }

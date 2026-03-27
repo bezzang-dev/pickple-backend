@@ -24,4 +24,8 @@ public class DeliveryCreateRequestDto {
     @NotBlank
     private String recipientContact;
 
+    private String username;
+
+    private String email;
+
 }

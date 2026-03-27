@@ -8,11 +8,9 @@ import com.pickple.notification_service.domain.repository.ChannelRepository;
 import com.pickple.notification_service.domain.repository.NotificationRepository;
 import com.pickple.notification_service.exception.ChannelErrorCode;
 import com.pickple.notification_service.exception.NotificationErrorCode;
-import com.pickple.notification_service.infrastructure.feign.UserFeignClient;
 import com.pickple.notification_service.infrastructure.messaging.events.EmailCreateRequestEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import jakarta.mail.internet.MimeMessage;
@@ -31,19 +29,13 @@ public class EmailService {
     private String from;
 
     private final JavaMailSender mailSender;
-
-    @Autowired
     private final NotificationRepository emailRepository;
-    @Autowired
     private final ChannelRepository channelRepository;
-
-    @Autowired
-    private final UserFeignClient userFeignClient;
 
     // 이메일 전송
     public void sendEmail(EmailCreateRequestEvent event) {
 
-        String toEmail = userFeignClient.getUserEmail(event.getUsername(), event.getUsername(), event.getRole());
+        String toEmail = event.getEmail();
 
         try{
             MimeMessage message = mailSender.createMimeMessage();

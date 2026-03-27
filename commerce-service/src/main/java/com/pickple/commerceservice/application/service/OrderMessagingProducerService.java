@@ -44,7 +44,7 @@ public class OrderMessagingProducerService {
     /**
      * 배송 생성 요청 전송
      */
-    public void sendDeliveryCreateRequest(UUID orderId, String username) {
+    public void sendDeliveryCreateRequest(UUID orderId, String username, String email) {
         // Redis에 저장된 배송 정보 조회
         OrderCreateRequestDto.DeliveryInfo deliveryInfo = temporaryStorageService.getDeliveryInfo(orderId);
 
@@ -55,7 +55,8 @@ public class OrderMessagingProducerService {
                 deliveryInfo.getRecipientName(),
                 deliveryInfo.getAddress(),
                 deliveryInfo.getContact(),
-                username
+                username,
+                email
         );
 
         // delivery-create-request 메시지 전송

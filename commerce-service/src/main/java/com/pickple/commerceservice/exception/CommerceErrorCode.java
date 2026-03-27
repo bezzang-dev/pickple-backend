@@ -31,6 +31,7 @@ public enum CommerceErrorCode implements ErrorCode {
     DELIVERY_INFO_NOT_FOUND(HttpStatus.NOT_FOUND, "배송 정보를 찾을 수 없습니다."),
     DELIVERY_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "배송 서비스와의 통신 중 오류가 발생했습니다."),
     PAYMENT_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "결제 서비스와의 통신 중 오류가 발생했습니다."),
+    USER_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "사용자 서비스와의 통신 중 오류가 발생했습니다."),
     PRODUCT_DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "찾을 수 없는 상품입니다."),
     ;
 
